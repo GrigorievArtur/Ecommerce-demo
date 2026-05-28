@@ -2,10 +2,13 @@ package com.example.ecommercedemo.services.users;
 
 import com.example.ecommercedemo.dtos.users.CreateUserDTO;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.enums.users.Roles;
+import com.example.ecommercedemo.exceptions.ResourceNotFoundException;
 import com.example.ecommercedemo.mappers.users.UserMapper;
 import com.example.ecommercedemo.repositories.users.UserRepo;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,6 +33,12 @@ public class UserService implements UserDetailsService {
         var user = userMapper.toUser(dto);
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         return userRepo.save(user);
+    }
+
+    public void makeAdmin(Long id){
+        var user = userRepo.findById(id).orElseThrow();
+        user.setRole(Roles.ADMIN);
+        userRepo.save(user);
     }
 
     public void deleteUser(Long userId, UserDetails userDetails) {
