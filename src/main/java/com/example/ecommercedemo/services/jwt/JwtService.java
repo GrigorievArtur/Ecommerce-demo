@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Transactional
 public class JwtService {
 
+    //TODO CHANGE THE SECRET ON PROD
     private final String secret =
             "my-super-secret-key-my-super-secret-key-my-super-secret-key-123";
 

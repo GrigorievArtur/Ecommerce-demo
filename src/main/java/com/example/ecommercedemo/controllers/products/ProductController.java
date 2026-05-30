@@ -1,6 +1,6 @@
 package com.example.ecommercedemo.controllers.products;
 
-import com.example.ecommercedemo.api.product.ProductAPI;
+import com.example.ecommercedemo.api.products.ProductAPI;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.filters.products.ProductFilter;
 import com.example.ecommercedemo.services.products.ProductService;

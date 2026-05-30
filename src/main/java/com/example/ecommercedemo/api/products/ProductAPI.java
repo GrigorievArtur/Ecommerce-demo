@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.api.product;
+package com.example.ecommercedemo.api.products;
 
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.filters.products.ProductFilter;
@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;

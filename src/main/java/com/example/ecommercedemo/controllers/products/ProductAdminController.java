@@ -1,6 +1,6 @@
 package com.example.ecommercedemo.controllers.products;
 
-import com.example.ecommercedemo.api.product.ProductAdminAPI;
+import com.example.ecommercedemo.api.products.ProductAdminAPI;
 import com.example.ecommercedemo.dtos.products.CreateProductDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.dtos.products.UpdateProductDTO;

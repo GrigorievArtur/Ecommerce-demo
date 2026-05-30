@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.api.product;
+package com.example.ecommercedemo.api.products;
 
 import com.example.ecommercedemo.dtos.products.CreateProductDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;

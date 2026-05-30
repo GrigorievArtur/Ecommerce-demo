@@ -22,11 +22,22 @@ public class Product {
     @GeneratedValue
     private Long id;
 
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private String description;
+
+    @Column(nullable = false)
     private BigDecimal basePrice;
-    private BigDecimal discountPercentage;
+
+    @Column(nullable = false)
+    private BigDecimal discountPercentage =  BigDecimal.ZERO;
+
+    @Column(nullable = false)
     private BigDecimal salePrice;
+
+    @Column(nullable = false)
     private Category category;
 
     @ElementCollection

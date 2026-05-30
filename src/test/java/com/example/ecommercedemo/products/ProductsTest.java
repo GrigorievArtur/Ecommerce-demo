@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.products;
 
+import com.example.ecommercedemo.common.Helpers;
 import com.example.ecommercedemo.dtos.users.CreateUserDTO;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.enums.products.Category;
@@ -42,10 +43,7 @@ class ProductsTest {
     private ProductRepo productRepo;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
-    private JwtService jwtService;
+    private Helpers helpers;
 
     @BeforeEach
     void setUp() {
@@ -59,8 +57,8 @@ class ProductsTest {
     @Test
     void getProductsPage_filtersProducts_success() throws Exception {
 //        final var token = authenticateCreatedUser();
-        final var matchingProduct = getSavedProduct("Test phone", "Android phone", Category.DEMO1);
-        getSavedProduct("Test laptop", "Work laptop", Category.DEMO2);
+        final var matchingProduct = helpers.getSavedProduct("Test phone", "Android phone", Category.DEMO1);
+        helpers.getSavedProduct("Test laptop", "Work laptop", Category.DEMO2);
 
         final var currentProductSize = productRepo.count();
 
@@ -86,8 +84,8 @@ class ProductsTest {
     @Test
     void getProductsPage_noFiltersProducts_success() throws Exception {
 //        final var token = authenticateCreatedUser();
-        final var matchingProduct = getSavedProduct("Test phone", "Android phone", Category.DEMO1);
-        getSavedProduct("Test laptop", "Work laptop", Category.DEMO2);
+        final var matchingProduct = helpers.getSavedProduct("Test phone", "Android phone", Category.DEMO1);
+        helpers.getSavedProduct("Test laptop", "Work laptop", Category.DEMO2);
 
         final var currentProductSize = productRepo.count();
 
@@ -108,37 +106,4 @@ class ProductsTest {
         Assertions.assertEquals(currentProductSize, productRepo.count());
     }
 
-
-
-    //********************************************************************
-    // HELPERS
-    //********************************************************************
-
-    private Product getSavedProduct(String name, String description, Category category) {
-        final var product = Product.builder()
-                .name(name)
-                .description(description)
-                .basePrice(BigDecimal.valueOf(100))
-                .discountPercentage(BigDecimal.valueOf(10))
-                .salePrice(BigDecimal.valueOf(90))
-                .category(category)
-                .mediaList(List.of())
-                .build();
-
-        return productRepo.save(product);
-    }
-
-    private String authenticateCreatedUser() {
-        final var email = "test-" + UUID.randomUUID().toString().substring(0, 8) + "@email.com";
-        final var userDto = CreateUserDTO.builder()
-                .email(email)
-                .firstname("Test")
-                .lastname("User")
-                .password("password")
-                .build();
-
-        userService.createUser(userDto);
-
-        return jwtService.generateToken(email);
-    }
 }
