@@ -1,13 +1,16 @@
-package com.example.ecommercedemo.models.carts;
+package com.example.ecommercedemo.dtos.carts.items;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
+@Builder
 @AllArgsConstructor
-public class CartItemJson {
-    private Long productId;
+@NoArgsConstructor
+public class UpdateCartItemDTO {
+
     private Integer quantity;
+
 }

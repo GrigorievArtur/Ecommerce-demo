@@ -4,14 +4,12 @@ import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
+import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,13 +20,27 @@ public class CartService {
     private CartRepo cartRepo;
 
     @Autowired
+    private CartMapper cartMapper;
+
+    @Autowired
+    private CartItemMapper cartItemMapper;
+
+    @Autowired
     private SecurityHelper securityHelper;
+
+
 
     public Cart getCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .map(user -> getUserCart(user, suid))
                 .orElseGet(() -> getGuestCart(suid));
     }
+
+    public CartDTO getCartDTO(UUID suid) {
+        return cartMapper.cartToCartDTO(getCart(suid));
+    }
+
+
 
     private Cart getUserCart(User user, UUID suid) {
         Optional<Cart> userCart = cartRepo.findByUser_Id(user.getId());

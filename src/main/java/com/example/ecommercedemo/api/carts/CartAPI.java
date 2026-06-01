@@ -1,9 +1,8 @@
 package com.example.ecommercedemo.api.carts;
 
 import com.example.ecommercedemo.dtos.carts.CartDTO;
-import com.example.ecommercedemo.dtos.carts.CartItemDTO;
-import com.example.ecommercedemo.dtos.carts.CreateCartItemDTO;
-import com.example.ecommercedemo.dtos.carts.UpdateCartItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.UpdateCartItemDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -25,22 +24,22 @@ public interface CartAPI {
 
     @PostMapping
     @Operation(summary = "Adds cart items to the current cart")
-    ResponseEntity<CartDTO> addToCart(
+    ResponseEntity<CartDTO> addCartItem(
             @RequestBody CreateCartItemDTO request,
             @CookieValue(name = "suid", required = false) UUID suid
     );
 
     @DeleteMapping
     @Operation(summary = "Removes a cart item from the current cart")
-    ResponseEntity<CartDTO> deleteFromCart(
-            @RequestParam Long cartItemId,
+    ResponseEntity<CartDTO> deleteCartItem(
+            @RequestParam Long productId,
             @CookieValue(name = "suid", required = false) UUID suid
     );
 
     @PatchMapping
     @Operation(summary = "Updates a cart item in the current cart")
-    ResponseEntity<CartDTO> updateFromCart(
-            @RequestParam Long cartItemId,
+    ResponseEntity<CartDTO> updateCartItem(
+            @RequestParam Long productId,
             @RequestBody UpdateCartItemDTO request,
             @CookieValue(name = "suid", required = false) UUID suid
     );

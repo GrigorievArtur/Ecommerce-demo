@@ -43,4 +43,18 @@ public class Product {
     @ElementCollection
     @CollectionTable(name = "product_media", joinColumns = @JoinColumn(name = "product_id"))
     private List<ProductMedia> mediaList;
+
+    @PrePersist
+    @PreUpdate
+    public void calculateSalePrice() {
+        if (this.discountPercentage == null) {
+            this.discountPercentage = BigDecimal.ZERO;
+        }
+
+        BigDecimal discountAmount = this.basePrice
+                .multiply(this.discountPercentage)
+                .divide(BigDecimal.valueOf(100));
+
+        this.salePrice = this.basePrice.subtract(discountAmount);
+    }
 }

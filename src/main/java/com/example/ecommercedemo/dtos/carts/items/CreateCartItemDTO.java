@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.dtos.carts;
+package com.example.ecommercedemo.dtos.carts.items;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateCartItemDTO {
+public class CreateCartItemDTO {
 
+    private Long productId;
     private Integer quantity;
 
 }

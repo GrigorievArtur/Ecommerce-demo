@@ -1,7 +1,7 @@
 package com.example.ecommercedemo.entities.carts;
 
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.carts.CartItemJson;
+import com.example.ecommercedemo.models.carts.CartItemModel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -42,7 +42,7 @@ public class Cart {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private List<CartItemJson> items = new ArrayList<>();
+    private List<CartItemModel> items = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {

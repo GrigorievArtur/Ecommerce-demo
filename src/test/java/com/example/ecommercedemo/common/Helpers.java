@@ -1,6 +1,7 @@
 package com.example.ecommercedemo.common;
 
 import com.example.ecommercedemo.dtos.users.CreateUserDTO;
+import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
@@ -75,5 +76,9 @@ public class Helpers {
                 .build();
 
         return productRepo.save(product);
+    }
+
+    public Cart getSavedCart() {
+
     }
 }
