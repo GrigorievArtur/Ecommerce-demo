@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.dtos.carts.items;
+package com.example.ecommercedemo.dtos.items;
 
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CartItemDTO {
+public class ItemDTO {
 
     private ProductDTO product;
     private int quantity;

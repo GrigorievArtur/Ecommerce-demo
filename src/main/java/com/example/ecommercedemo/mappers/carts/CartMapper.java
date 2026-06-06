@@ -1,16 +1,16 @@
 package com.example.ecommercedemo.mappers.carts;
 
 import com.example.ecommercedemo.dtos.carts.CartDTO;
-import com.example.ecommercedemo.dtos.carts.items.CartItemDTO;
+import com.example.ecommercedemo.dtos.items.ItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
-import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
+import com.example.ecommercedemo.mappers.items.ItemMapper;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
 import java.math.BigDecimal;
 
-@Mapper(componentModel = "spring", uses = CartItemMapper.class)
+@Mapper(componentModel = "spring", uses = ItemMapper.class)
 public interface CartMapper {
 
     CartDTO cartToCartDTO(Cart cart);
@@ -21,7 +21,7 @@ public interface CartMapper {
         BigDecimal totalPrice = BigDecimal.ZERO;
 
         if (dto.getItems() != null) {
-            for (CartItemDTO item : dto.getItems()) {
+            for (ItemDTO item : dto.getItems()) {
                 if (item.getSalePrice() != null) {
                     totalPrice = totalPrice.add(item.getSalePrice());
                 }

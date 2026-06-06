@@ -4,7 +4,7 @@ import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
+import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
@@ -25,7 +25,7 @@ public class CartService {
     private CartMapper cartMapper;
 
     @Autowired
-    private CartItemMapper cartItemMapper;
+    private ItemMapper itemMapper;
 
 
     @Autowired
@@ -45,8 +45,6 @@ public class CartService {
     public CartDTO getCartDTO(UUID suid) {
         return cartMapper.cartToCartDTO(getCart(suid));
     }
-
-
 
     private Cart getUserCart(User user, UUID suid) {
         Optional<Cart> userCart = cartRepo.findByUser_Id(user.getId());

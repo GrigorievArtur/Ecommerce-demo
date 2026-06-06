@@ -1,12 +1,13 @@
-package com.example.ecommercedemo.services.carts;
+package com.example.ecommercedemo.services.items;
 
 import com.example.ecommercedemo.dtos.carts.CartDTO;
-import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
+import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
-import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
+import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.models.carts.CartItemModel;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
+import com.example.ecommercedemo.services.carts.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.UUID;
 
 @Service
-public class CartItemService {
+public class ItemService {
 
     @Autowired
     private CartRepo cartRepo;
@@ -24,17 +25,17 @@ public class CartItemService {
     private CartMapper cartMapper;
 
     @Autowired
-    private CartItemMapper cartItemMapper;
+    private ItemMapper itemMapper;
 
     @Autowired
     private CartService cartService;
 
-    public CartDTO addCartItem(UUID suid, CreateCartItemDTO cartItemDTO) {
+    public CartDTO addCartItem(UUID suid, CreateItemDTO cartItemDTO) {
         var cart = cartService.getCart(suid);
         var item = findCartItemModelInCart(cart, cartItemDTO.getProductId());
 
         if (item == null) {
-            cart.getItems().add(cartItemMapper.toModel(cartItemDTO));
+            cart.getItems().add(itemMapper.toModel(cartItemDTO));
         } else {
             item.setQuantity(item.getQuantity() + cartItemDTO.getQuantity());
         }
@@ -65,6 +66,7 @@ public class CartItemService {
             return cartMapper.cartToCartDTO(savedCart);
         }
 
+
         public CartDTO removeCartItem(UUID suid, Long productId) {
             var cart = cartService.getCart(suid);
             var item = findCartItemModelInCart(cart, productId);
@@ -79,9 +81,6 @@ public class CartItemService {
             var savedCart = cartRepo.save(cart);
             return cartMapper.cartToCartDTO(savedCart);
         }
-
-
-
 
     private CartItemModel findCartItemModelInCart(Cart cart, Long productId) {
         return cart.getItems().stream()

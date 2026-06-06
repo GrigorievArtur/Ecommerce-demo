@@ -5,6 +5,7 @@ import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
+import com.example.ecommercedemo.services.carts.CartService;
 import com.example.ecommercedemo.services.jwt.JwtService;
 import com.example.ecommercedemo.services.users.UserService;
 import org.springframework.stereotype.Component;
@@ -78,7 +79,4 @@ public class Helpers {
         return productRepo.save(product);
     }
 
-    public Cart getSavedCart() {
-        return Cart.builder().build();
-    }
 }
