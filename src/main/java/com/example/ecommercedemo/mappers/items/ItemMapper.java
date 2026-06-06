@@ -11,28 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 
 @Mapper(componentModel = "spring")
-public abstract class ItemMapper {
+public interface ItemMapper {
 
-    @Autowired
-    protected ProductService productService;
+    ItemModel toModel(CreateItemDTO cartItemDTO);
 
-    public abstract ItemModel toModel(CreateItemDTO cartItemDTO);
+    ItemDTO toDTO(ItemModel itemModel);
 
-    public abstract ItemDTO toDTO(ItemModel itemModel);
-
-    @AfterMapping
-    protected void fillProductAndPrice(
-            ItemModel itemModel,
-            @MappingTarget ItemDTO itemDTO
-            ) {
-        //TODO: MOVE THIS TO SERVICE
-        ProductDTO product = productService.itemToProductDTO(itemModel);
-
-        itemDTO.setProduct(product);
-
-        BigDecimal quantity = BigDecimal.valueOf(itemDTO.getQuantity());
-        BigDecimal itemSalePrice = product.getSalePrice().multiply(quantity);
-
-        itemDTO.setSalePrice(itemSalePrice);
-    }
 }

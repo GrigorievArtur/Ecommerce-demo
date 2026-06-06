@@ -79,7 +79,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
-        itemService.addCartItem(suid, createItemDTO);
+        cartService.addItemToCart(createItemDTO, suid);
 
 
         mockMvc.perform(
@@ -101,7 +101,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
-        itemService.addCartItem(suid, createItemDTO);
+        cartService.addItemToCart(createItemDTO, suid);
 
 
         mockMvc.perform(
@@ -123,7 +123,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(3).build();
-        itemService.addCartItem(suid, createItemDTO);
+        cartService.addItemToCart(createItemDTO, suid);
 
 
         mockMvc.perform(

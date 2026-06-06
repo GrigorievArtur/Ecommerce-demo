@@ -16,6 +16,7 @@ public class ItemDTO {
 
     private ProductDTO product;
     private int quantity;
-    private BigDecimal salePrice;
+    private BigDecimal basePrice;
+    private BigDecimal totalPrice;
 
 }

@@ -2,12 +2,15 @@ package com.example.ecommercedemo.services.carts;
 
 import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
+import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
+import com.example.ecommercedemo.services.items.ItemService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class CartService {
 
     @Autowired
@@ -27,7 +31,7 @@ public class CartService {
     private CartMapper cartMapper;
 
     @Autowired
-    private ItemMapper itemMapper;
+    private ItemService itemService;
 
     @Autowired
     private ProductRepo productRepo;
@@ -45,11 +49,41 @@ public class CartService {
     public CartDTO getCartDTO(Cart cart) {
         CartDTO dto = cartMapper.cartToCartDTO(cart);
 
+        dto.setItems(
+                cart.getItems().stream()
+                .map(itemService::toDTO)
+                .toList()
+        );
+
         dto.setTotalPrice(calculateBasePrice(cart));
         dto.setFinalPrice(calculateSalePrice(cart));
 
         return dto;
     }
+
+    // Items manipulation stuff
+    public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
+        var cart = getCart(suid);
+        itemService.addItem(cart.getItems(), request);
+        var savedCart = cartRepo.save(cart);
+        return getCartDTO(savedCart);
+    }
+
+    public CartDTO decreaseItemFromCart(Long productId, int quantity, UUID suid) {
+        var cart = getCart(suid);
+        itemService.decrementItem(cart.getItems(), productId, quantity);
+        var savedCart = cartRepo.save(cart);
+        return getCartDTO(savedCart);
+    }
+
+    public CartDTO removeItemFromCart(Long productId, UUID suid) {
+        var cart = getCart(suid);
+        itemService.removeItem(cart.getItems(), productId);
+        var savedCart = cartRepo.save(cart);
+        return getCartDTO(savedCart);
+    }
+
+
 
     // Internal stuff
     public Cart getCart(UUID suid) {
@@ -109,7 +143,7 @@ public class CartService {
 
 
     // This looks so bad 😭
-    public BigDecimal calculateBasePrice(Cart cart) {
+    private BigDecimal calculateBasePrice(Cart cart) {
         return cart.getItems().stream().map(cartItem ->
         {
           BigDecimal productPrice = productRepo.findById(cartItem.getProductId())
@@ -119,7 +153,7 @@ public class CartService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal calculateSalePrice(Cart cart){
+    private BigDecimal calculateSalePrice(Cart cart){
         BigDecimal totalPrice = calculateBasePrice(cart);
         BigDecimal discountPercentage = cart.getDiscountPercentage() == null ? BigDecimal.ZERO : cart.getDiscountPercentage();
         BigDecimal discountAmount = totalPrice.multiply(discountPercentage).divide(BigDecimal.valueOf(100));
