@@ -3,6 +3,7 @@ package com.example.ecommercedemo.common;
 import com.example.ecommercedemo.dtos.users.CreateUserDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
+import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.carts.CartService;
@@ -32,8 +33,16 @@ public class Helpers {
     }
 
     public String authenticateCreatedUser() {
-        final var email = "test-" + UUID.randomUUID().toString().substring(0, 8) + "@email.com";
+        return jwtService.generateToken(createMockUser().getEmail());
+    }
 
+    public String authenticateCreatedUser(User user) {
+        return jwtService.generateToken(user.getEmail());
+    }
+
+
+    public User createMockUser(){
+        final var email = "test-" + UUID.randomUUID().toString().substring(0, 8) + "@email.com";
         final var userDto = CreateUserDTO.builder()
                 .email(email)
                 .firstname("Test")
@@ -41,24 +50,14 @@ public class Helpers {
                 .password("password")
                 .build();
 
-        userService.createUser(userDto);
-
-        return jwtService.generateToken(email);
+        return userService.createUser(userDto);
     }
 
     public String authenticateCreatedAdmin() {
-        final var email = "test-" + UUID.randomUUID().toString().substring(0, 8) + "@email.com";
-
-        final var userDto = CreateUserDTO.builder()
-                .email(email)
-                .firstname("Test")
-                .lastname("User")
-                .password("password")
-                .build();
-        var user = userService.createUser(userDto);
+        var user = createMockUser();
         userService.makeAdmin(user.getId());
 
-        return jwtService.generateToken(email);
+        return jwtService.generateToken(user.getEmail());
     }
 
     public Product getSavedProduct() {
@@ -71,7 +70,6 @@ public class Helpers {
                 .description(description)
                 .basePrice(BigDecimal.valueOf(100))
                 .discountPercentage(BigDecimal.valueOf(10))
-                .salePrice(BigDecimal.valueOf(90))
                 .category(category)
                 .mediaList(List.of())
                 .build();

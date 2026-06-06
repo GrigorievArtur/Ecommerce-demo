@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.carts;
 
+import com.example.ecommercedemo.common.Helpers;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.services.carts.CartService;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -24,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 @AutoConfigureMockMvc
-public class CartGuestTest {
+public class CartTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -34,6 +36,9 @@ public class CartGuestTest {
 
     @Autowired
     private CartService cartService;
+
+    @Autowired
+    private Helpers helpers;
 
 
     //********************************************************************
@@ -50,6 +55,26 @@ public class CartGuestTest {
 //                                .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .cookie(new Cookie("suid", suid.toString()))
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
+    }
+
+    @Test
+    void getCart_User_success() throws Exception {
+        var user = helpers.createMockUser();
+        var token = helpers.authenticateCreatedUser(user);
+
+        var cart = cartRepo.save(Cart.builder().user(user).build());
+
+        var suid = cart.getSuid();
+
+        mockMvc.perform(
+                        get("/api/cart")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+//                                .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
