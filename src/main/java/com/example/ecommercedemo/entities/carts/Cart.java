@@ -1,11 +1,14 @@
 package com.example.ecommercedemo.entities.carts;
 
+import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.models.carts.CartItemModel;
+import com.example.ecommercedemo.repositories.products.ProductRepo;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.mapstruct.Context;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -66,5 +69,6 @@ public class Cart {
             this.expiryDate = null;
         }
     }
+
 }
 

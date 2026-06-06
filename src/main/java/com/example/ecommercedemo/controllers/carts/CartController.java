@@ -3,7 +3,6 @@ package com.example.ecommercedemo.controllers.carts;
 import com.example.ecommercedemo.api.carts.CartAPI;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
-import com.example.ecommercedemo.dtos.carts.items.UpdateCartItemDTO;
 import com.example.ecommercedemo.services.carts.CartItemService;
 import com.example.ecommercedemo.services.carts.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,12 +31,12 @@ public class CartController implements CartAPI {
     }
 
     @Override
-    public ResponseEntity<CartDTO> deleteCartItem(Long productId, UUID suid) {
-        return ResponseEntity.ok(cartItemService.deleteCartItem(suid, productId));
+    public ResponseEntity<CartDTO> decrementCartItem(Long productId, int quantity, UUID suid) {
+        return ResponseEntity.ok(cartItemService.decrementCartItem(productId, quantity, suid));
     }
 
     @Override
-    public ResponseEntity<CartDTO> updateCartItem(Long productId, UpdateCartItemDTO request, UUID suid) {
-        return ResponseEntity.ok(cartItemService.updateCartItem(suid, productId, request));
+    public ResponseEntity<CartDTO> removeCartItem(Long productId, UUID suid) {
+        return ResponseEntity.ok(cartItemService.removeCartItem(suid, productId));
     }
 }

@@ -7,9 +7,11 @@ import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
+import com.example.ecommercedemo.repositories.products.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +26,10 @@ public class CartService {
 
     @Autowired
     private CartItemMapper cartItemMapper;
+
+
+    @Autowired
+    private ProductRepo productRepo;
 
     @Autowired
     private SecurityHelper securityHelper;
@@ -88,6 +94,23 @@ public class CartService {
         cart.setUser(user);
         cart.setExpiryDate(null);
         return cartRepo.save(cart);
+    }
+
+    public BigDecimal calculateBasePrice(Cart cart) {
+        return cart.getItems().stream().map(cartItem ->
+        {
+          BigDecimal productPrice = productRepo.findById(cartItem.getProductId())
+                  .orElseThrow().getSalePrice();
+          return productPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+        })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal calculateSalePrice(Cart cart){
+        BigDecimal totalPrice = calculateBasePrice(cart);
+        BigDecimal discountPercentage = cart.getDiscountPercentage() == null ? BigDecimal.ZERO : cart.getDiscountPercentage();
+        BigDecimal discountAmount = totalPrice.multiply(discountPercentage).divide(BigDecimal.valueOf(100));
+        return totalPrice.subtract(discountAmount);
     }
 
 }

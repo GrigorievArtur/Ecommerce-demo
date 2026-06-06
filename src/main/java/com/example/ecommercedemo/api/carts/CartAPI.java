@@ -2,7 +2,6 @@ package com.example.ecommercedemo.api.carts;
 
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
-import com.example.ecommercedemo.dtos.carts.items.UpdateCartItemDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -30,17 +29,18 @@ public interface CartAPI {
     );
 
     @DeleteMapping
-    @Operation(summary = "Removes a cart item from the current cart")
-    ResponseEntity<CartDTO> deleteCartItem(
+    ResponseEntity<CartDTO> decrementCartItem(
+            @RequestParam Long productId,
+            @RequestParam(defaultValue = "1") int quantity,
+            @CookieValue(name = "suid", required = false) UUID suid
+    );
+
+    @DeleteMapping("/all")
+    @Operation(summary = "Removes a cart item from the current cart no matter the quantity.")
+    ResponseEntity<CartDTO> removeCartItem(
             @RequestParam Long productId,
             @CookieValue(name = "suid", required = false) UUID suid
     );
 
-    @PatchMapping
-    @Operation(summary = "Updates a cart item in the current cart")
-    ResponseEntity<CartDTO> updateCartItem(
-            @RequestParam Long productId,
-            @RequestBody UpdateCartItemDTO request,
-            @CookieValue(name = "suid", required = false) UUID suid
-    );
+
 }

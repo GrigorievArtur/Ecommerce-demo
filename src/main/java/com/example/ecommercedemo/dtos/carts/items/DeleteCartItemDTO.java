@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateCartItemDTO {
-
+public class DeleteCartItemDTO {
+    private Long productId;
     private Integer quantity;
-
 }

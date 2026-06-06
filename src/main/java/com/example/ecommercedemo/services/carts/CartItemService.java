@@ -1,19 +1,16 @@
 package com.example.ecommercedemo.services.carts;
 
-import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
-import com.example.ecommercedemo.dtos.carts.items.UpdateCartItemDTO;
-import com.example.ecommercedemo.dtos.products.ProductDTO;
-import com.example.ecommercedemo.entities.products.Product;
+import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.mappers.carts.items.CartItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
-import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.models.carts.CartItemModel;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
-import com.example.ecommercedemo.repositories.products.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -34,30 +31,63 @@ public class CartItemService {
 
     public CartDTO addCartItem(UUID suid, CreateCartItemDTO cartItemDTO) {
         var cart = cartService.getCart(suid);
-        cart.getItems().add(cartItemMapper.toModel(cartItemDTO));
+        var item = findCartItemModelInCart(cart, cartItemDTO.getProductId());
+
+        if (item == null) {
+            cart.getItems().add(cartItemMapper.toModel(cartItemDTO));
+        } else {
+            item.setQuantity(item.getQuantity() + cartItemDTO.getQuantity());
+        }
+
         var savedCart = cartRepo.save(cart);
         return cartMapper.cartToCartDTO(savedCart);
     }
 
-    public CartDTO deleteCartItem(UUID suid, Long productId) {
-        var cart = cartService.getCart(suid);
-        cart.getItems().removeIf(item -> item.getProductId().equals(productId));
-        var savedCart = cartRepo.save(cart);
-        return cartMapper.cartToCartDTO(savedCart);
-    }
+        public CartDTO decrementCartItem(Long productId, int quantity, UUID suid) {
+            var cart = cartService.getCart(suid);
+            var item = findCartItemModelInCart(cart, productId);
 
-    public CartDTO updateCartItem(UUID suid, Long productId, UpdateCartItemDTO updateCartItemDTO) {
-        var cart = cartService.getCart(suid);
+            if (item == null) {
+                throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product not in cart");
+            }
 
-        var item = cart.getItems().stream()
+            int remaining = item.getQuantity() - quantity;
+
+            if (remaining <= 0) {
+                cart.getItems().remove(item);
+            } else {
+                item.setQuantity(remaining);
+            }
+
+            var savedCart = cartRepo.save(cart);
+            return cartMapper.cartToCartDTO(savedCart);
+        }
+
+        public CartDTO removeCartItem(UUID suid, Long productId) {
+            var cart = cartService.getCart(suid);
+            var item = findCartItemModelInCart(cart, productId);
+
+            if (item == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
+            }
+
+            cart.getItems().remove(item);
+
+
+            var savedCart = cartRepo.save(cart);
+            return cartMapper.cartToCartDTO(savedCart);
+        }
+
+
+
+
+    private CartItemModel findCartItemModelInCart(Cart cart, Long productId) {
+        return cart.getItems().stream()
                 .filter(cartItem -> cartItem.getProductId().equals(productId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Product not found in cart"));
-
-        cartItemMapper.updateModelFromDTO(updateCartItemDTO, item);
-
-        var savedCart = cartRepo.save(cart);
-        return cartMapper.cartToCartDTO(savedCart);
+                .orElse(null);
     }
 
 }

@@ -2,7 +2,6 @@ package com.example.ecommercedemo.mappers.carts.items;
 
 import com.example.ecommercedemo.dtos.carts.items.CartItemDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateCartItemDTO;
-import com.example.ecommercedemo.dtos.carts.items.UpdateCartItemDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.models.carts.CartItemModel;
 import com.example.ecommercedemo.services.products.ProductService;
@@ -20,9 +19,6 @@ public abstract class CartItemMapper {
     public abstract CartItemModel toModel(CreateCartItemDTO cartItemDTO);
 
     public abstract CartItemDTO toDTO(CartItemModel cartItemModel);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    public abstract void updateModelFromDTO(UpdateCartItemDTO updateCartItemDTO, @MappingTarget CartItemModel cartItem);
 
     @AfterMapping
     protected void fillProductAndPrice(
