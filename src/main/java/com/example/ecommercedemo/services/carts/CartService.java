@@ -9,7 +9,9 @@ import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -27,7 +29,6 @@ public class CartService {
     @Autowired
     private ItemMapper itemMapper;
 
-
     @Autowired
     private ProductRepo productRepo;
 
@@ -35,15 +36,26 @@ public class CartService {
     private SecurityHelper securityHelper;
 
 
+    // Probably is not redundant 'cause business logic
+    public CartDTO getCartDTO(UUID suid) {
+        Cart cart = getCart(suid);
+        return getCartDTO(cart);
+    }
 
+    public CartDTO getCartDTO(Cart cart) {
+        CartDTO dto = cartMapper.cartToCartDTO(cart);
+
+        dto.setTotalPrice(calculateBasePrice(cart));
+        dto.setFinalPrice(calculateSalePrice(cart));
+
+        return dto;
+    }
+
+    // Internal stuff
     public Cart getCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .map(user -> getUserCart(user, suid))
                 .orElseGet(() -> getGuestCart(suid));
-    }
-
-    public CartDTO getCartDTO(UUID suid) {
-        return cartMapper.cartToCartDTO(getCart(suid));
     }
 
     private Cart getUserCart(User user, UUID suid) {
@@ -94,6 +106,9 @@ public class CartService {
         return cartRepo.save(cart);
     }
 
+
+
+    // This looks so bad 😭
     public BigDecimal calculateBasePrice(Cart cart) {
         return cart.getItems().stream().map(cartItem ->
         {
@@ -110,5 +125,7 @@ public class CartService {
         BigDecimal discountAmount = totalPrice.multiply(discountPercentage).divide(BigDecimal.valueOf(100));
         return totalPrice.subtract(discountAmount);
     }
+
+
 
 }

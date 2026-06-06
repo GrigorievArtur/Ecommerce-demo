@@ -24,7 +24,7 @@ public class ProductService {
 
     private final ProductMapper productMapper;
 
-    public ProductDTO getCartItemProductDTO(ItemModel itemModel) {
+    public ProductDTO itemToProductDTO(ItemModel itemModel) {
         var dto = productRepo.findById(itemModel.getProductId()).orElseThrow();
         return productMapper.toDTO(dto);
     }

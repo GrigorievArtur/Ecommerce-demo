@@ -25,7 +25,8 @@ public abstract class ItemMapper {
             ItemModel itemModel,
             @MappingTarget ItemDTO itemDTO
             ) {
-        ProductDTO product = productService.getCartItemProductDTO(itemModel);
+        //TODO: MOVE THIS TO SERVICE
+        ProductDTO product = productService.itemToProductDTO(itemModel);
 
         itemDTO.setProduct(product);
 

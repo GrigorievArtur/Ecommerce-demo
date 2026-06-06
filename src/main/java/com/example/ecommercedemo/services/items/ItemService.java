@@ -41,7 +41,7 @@ public class ItemService {
         }
 
         var savedCart = cartRepo.save(cart);
-        return cartMapper.cartToCartDTO(savedCart);
+        return cartService.getCartDTO(savedCart);
     }
 
         public CartDTO decrementCartItem(Long productId, int quantity, UUID suid) {
@@ -63,7 +63,7 @@ public class ItemService {
             }
 
             var savedCart = cartRepo.save(cart);
-            return cartMapper.cartToCartDTO(savedCart);
+            return cartService.getCartDTO(savedCart);
         }
 
 
@@ -79,7 +79,7 @@ public class ItemService {
 
 
             var savedCart = cartRepo.save(cart);
-            return cartMapper.cartToCartDTO(savedCart);
+            return cartService.getCartDTO(savedCart);
         }
 
     private ItemModel findCartItemModelInCart(Cart cart, Long productId) {
