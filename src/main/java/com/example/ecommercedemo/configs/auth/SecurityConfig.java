@@ -28,6 +28,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/cart/**").permitAll()
                                 .requestMatchers("/api/products/**").permitAll()
                                 .anyRequest().authenticated()
                         )

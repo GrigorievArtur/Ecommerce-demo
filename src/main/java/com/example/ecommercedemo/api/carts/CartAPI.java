@@ -20,6 +20,4 @@ public interface CartAPI {
             @CookieValue(name = "suid", required = false) UUID suid
     );
 
-
-
 }

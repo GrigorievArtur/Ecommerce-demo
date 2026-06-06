@@ -1,14 +1,11 @@
 package com.example.ecommercedemo.entities.carts;
 
-import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.carts.CartItemModel;
-import com.example.ecommercedemo.repositories.products.ProductRepo;
+import com.example.ecommercedemo.models.carts.ItemModel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.mapstruct.Context;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -29,6 +26,7 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Builder.Default
     @Column(nullable = false, unique = true, updatable = false)
     private UUID suid = UUID.randomUUID();
 
@@ -36,6 +34,7 @@ public class Cart {
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
+    @Builder.Default
     @Column(nullable = false)
     private BigDecimal discountPercentage =  BigDecimal.ZERO;
 
@@ -43,9 +42,10 @@ public class Cart {
     private Instant lastAccessDate;
     private Instant creationDate;
 
+    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private List<CartItemModel> items = new ArrayList<>();
+    private List<ItemModel> items = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {

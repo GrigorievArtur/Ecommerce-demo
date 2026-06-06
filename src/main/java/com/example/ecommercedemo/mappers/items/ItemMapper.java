@@ -3,7 +3,7 @@ package com.example.ecommercedemo.mappers.items;
 import com.example.ecommercedemo.dtos.items.ItemDTO;
 import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
-import com.example.ecommercedemo.models.carts.CartItemModel;
+import com.example.ecommercedemo.models.carts.ItemModel;
 import com.example.ecommercedemo.services.products.ProductService;
 import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,16 +16,16 @@ public abstract class ItemMapper {
     @Autowired
     protected ProductService productService;
 
-    public abstract CartItemModel toModel(CreateItemDTO cartItemDTO);
+    public abstract ItemModel toModel(CreateItemDTO cartItemDTO);
 
-    public abstract ItemDTO toDTO(CartItemModel cartItemModel);
+    public abstract ItemDTO toDTO(ItemModel itemModel);
 
     @AfterMapping
     protected void fillProductAndPrice(
-            CartItemModel cartItemModel,
+            ItemModel itemModel,
             @MappingTarget ItemDTO itemDTO
             ) {
-        ProductDTO product = productService.getCartItemProductDTO(cartItemModel);
+        ProductDTO product = productService.getCartItemProductDTO(itemModel);
 
         itemDTO.setProduct(product);
 

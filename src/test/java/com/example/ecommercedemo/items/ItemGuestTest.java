@@ -2,8 +2,6 @@ package com.example.ecommercedemo.items;
 
 import com.example.ecommercedemo.common.Helpers;
 import com.example.ecommercedemo.dtos.items.CreateItemDTO;
-import com.example.ecommercedemo.dtos.items.DeleteItemDTO;
-import com.example.ecommercedemo.dtos.products.CreateProductDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
@@ -34,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 @AutoConfigureMockMvc
-public class ItemTest {
+public class ItemGuestTest {
     @Autowired
     private MockMvc mockMvc;
 

@@ -5,7 +5,7 @@ import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
-import com.example.ecommercedemo.models.carts.CartItemModel;
+import com.example.ecommercedemo.models.carts.ItemModel;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.services.carts.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +82,7 @@ public class ItemService {
             return cartMapper.cartToCartDTO(savedCart);
         }
 
-    private CartItemModel findCartItemModelInCart(Cart cart, Long productId) {
+    private ItemModel findCartItemModelInCart(Cart cart, Long productId) {
         return cart.getItems().stream()
                 .filter(cartItem -> cartItem.getProductId().equals(productId))
                 .findFirst()

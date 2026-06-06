@@ -3,14 +3,12 @@ package com.example.ecommercedemo.services.products;
 import com.example.ecommercedemo.dtos.products.CreateProductDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
-import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.exceptions.ResourceNotFoundException;
 import com.example.ecommercedemo.filters.products.ProductFilter;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.models.carts.CartItemModel;
+import com.example.ecommercedemo.models.carts.ItemModel;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.specifications.ProductSpecification;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,8 +24,8 @@ public class ProductService {
 
     private final ProductMapper productMapper;
 
-    public ProductDTO getCartItemProductDTO(CartItemModel cartItemModel) {
-        var dto = productRepo.findById(cartItemModel.getProductId()).orElseThrow();
+    public ProductDTO getCartItemProductDTO(ItemModel itemModel) {
+        var dto = productRepo.findById(itemModel.getProductId()).orElseThrow();
         return productMapper.toDTO(dto);
     }
 

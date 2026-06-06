@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@RequestMapping("api/cart/items/")
+@RequestMapping("api/cart/items")
 @Tag(name = "Carts of different users")
 public interface ItemAPI {
 
