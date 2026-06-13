@@ -1,13 +1,12 @@
 package com.example.ecommercedemo.common;
 
 import com.example.ecommercedemo.dtos.users.CreateUserDTO;
-import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.enums.products.Category;
-import com.example.ecommercedemo.models.common.PriceData;
+import com.example.ecommercedemo.models.pricing.BasePrice;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
-import com.example.ecommercedemo.services.carts.CartService;
 import com.example.ecommercedemo.services.jwt.JwtService;
 import com.example.ecommercedemo.services.users.UserService;
 import org.springframework.stereotype.Component;
@@ -69,8 +68,11 @@ public class Helpers {
         final var product = Product.builder()
                 .name(name)
                 .description(description)
-                .price(PriceData.builder()
-                        .originalPrice(BigDecimal.valueOf(100))
+                .unitPrice(UnitPrice.builder()
+                        .basePrice(
+                                BasePrice.builder()
+                                        .price(BigDecimal.valueOf(100))
+                                        .build())
                         .discountPercentage(BigDecimal.valueOf(10))
                         .build())
                 .category(category)

@@ -1,5 +1,4 @@
 package com.example.ecommercedemo.entities.products;
-import com.example.ecommercedemo.models.common.PriceData;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -52,26 +51,27 @@ public class Product {
     )
     private List<ProductMedia> mediaList;
 
-    @PrePersist
-    @PreUpdate
-    public void calculateSalePrice() {
-
-        PriceData price = this.price;
-
-        if (price == null || price.getOriginalPrice() == null) {
-            return;
-        }
-
-        if (price.getDiscountPercentage() == null) {
-            price.setDiscountPercentage(BigDecimal.ZERO);
-        }
-
-        BigDecimal discountAmount = price.getOriginalPrice()
-                .multiply(price.getDiscountPercentage())
-                .divide(BigDecimal.valueOf(100));
-
-        price.setTotalPrice(
-                price.getOriginalPrice().subtract(discountAmount)
-        );
-    }
+    // Not needed since we calculate the total directly using effectivePrice on unitPrice
+//    @PrePersist
+//    @PreUpdate
+//    public void calculateSalePrice() {
+//
+//        UnitPrice price = this.unitPrice;
+//
+//        if (price == null || price.getBasePrice() == null) {
+//            return;
+//        }
+//
+//        if (price.getDiscountPercentage() == null) {
+//            price.setDiscountPercentage(BigDecimal.ZERO);
+//        }
+//
+//        BigDecimal discountAmount = price.getOriginalPrice()
+//                .multiply(price.getDiscountPercentage())
+//                .divide(BigDecimal.valueOf(100));
+//
+//        price.setTotalPrice(
+//                price.getOriginalPrice().subtract(discountAmount)
+//        );
+//    }
 }

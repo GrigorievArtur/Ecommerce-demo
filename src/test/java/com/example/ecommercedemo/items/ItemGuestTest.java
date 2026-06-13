@@ -51,8 +51,6 @@ public class ItemGuestTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-
-
     @Test
     void addItemToCart_Guest_success() throws Exception {
         var cart = cartRepo.save(new Cart());
@@ -68,8 +66,8 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.price.totalPrice").value(BigDecimal.valueOf(180.0000)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.basePrice.price").value(180.0));
     }
 
     @Test
@@ -81,7 +79,6 @@ public class ItemGuestTest {
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
         cartService.addItemToCart(createItemDTO, suid);
 
-
         mockMvc.perform(
                         delete("/api/cart/items")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -90,8 +87,8 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.price.totalPrice").value(BigDecimal.valueOf(90.0000)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.basePrice.price").value(90.0));
     }
 
     @Test
@@ -103,7 +100,6 @@ public class ItemGuestTest {
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
         cartService.addItemToCart(createItemDTO, suid);
 
-
         mockMvc.perform(
                         delete("/api/cart/items")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -112,8 +108,8 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.price.totalPrice").value(0))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.basePrice.price").value(0));
     }
 
     @Test
@@ -125,7 +121,6 @@ public class ItemGuestTest {
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(3).build();
         cartService.addItemToCart(createItemDTO, suid);
 
-
         mockMvc.perform(
                         delete("/api/cart/items/all")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -133,9 +128,7 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.price.totalPrice").value(0))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.basePrice.price").value(0));
     }
-
-
 }

@@ -1,11 +1,10 @@
 package com.example.ecommercedemo.models.pricing;
 
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import jakarta.persistence.Embedded;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import java.math.BigDecimal;
 
 @Data
@@ -15,15 +14,16 @@ import java.math.BigDecimal;
 @Embeddable
 public class LinePrice {
 
-    int quantity;
-    UnitPrice unitPrice;
+    @Min(1)
+    @Builder.Default
+    private int quantity = 1;
 
-    /**
-     * Computed — never stored. Delegates to UnitPrice.effectivePrice().
-     */
-    public BigDecimal totalPrice() {
-        return unitPrice.effectivePrice()
-                .multiply(BigDecimal.valueOf(quantity));
+    @NotNull
+    @Embedded
+    private UnitPrice unitPrice;
+
+    public BigDecimal effectivePrice() {
+        if (unitPrice == null) return BigDecimal.ZERO;
+        return unitPrice.effectivePrice().multiply(BigDecimal.valueOf(quantity));
     }
-
 }

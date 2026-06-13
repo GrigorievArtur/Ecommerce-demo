@@ -6,20 +6,23 @@ import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
-import com.example.ecommercedemo.models.common.PriceData;
-import com.example.ecommercedemo.models.common.PriceSnapshot;
+import com.example.ecommercedemo.models.pricing.BasePrice;
+import com.example.ecommercedemo.models.pricing.LinePrice;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.snapshots.SnapshotUnitPrice;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenPrice;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenUnitPrice;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
 import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,8 +48,6 @@ public class CartService {
     @Autowired
     private PriceService priceService;
 
-
-    // Probably is not redundant 'cause business logic
     public CartDTO getCartDTO(UUID suid) {
         Cart cart = getCart(suid);
         return getCartDTO(cart);
@@ -57,8 +58,8 @@ public class CartService {
 
         dto.setItems(
                 cart.getItems().stream()
-                .map(itemService::toDTO)
-                .toList()
+                        .map(itemService::toDTO)
+                        .toList()
         );
 
         UnitPrice price = calculatePriceData(cart);
@@ -67,7 +68,6 @@ public class CartService {
         return dto;
     }
 
-    // Items manipulation stuff
     public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
         var cart = getCart(suid);
         itemService.addItem(cart.getItems(), request);
@@ -89,9 +89,8 @@ public class CartService {
         return getCartDTO(savedCart);
     }
 
+//  Internal shi code
 
-
-    // Internal stuff
     public Cart getCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .map(user -> getUserCart(user, suid))
@@ -146,29 +145,34 @@ public class CartService {
         return cartRepo.save(cart);
     }
 
-
-
-    // This looks so bad 😭 checks if snapshot is valid and calculates total
+//    Just calculation of price for the cart
     private UnitPrice calculatePriceData(Cart cart) {
-        UnitPrice cartPrice = new UnitPrice();
-        cartPrice.getBasePrice().setPrice(BigDecimal.ZERO);
+        BigDecimal cartTotal = BigDecimal.ZERO;
 
-        cart.getItems().forEach(item -> {
+        for (var item : cart.getItems()) {
+            FrozenLinePrice linePrice = item.getFrozenLinePrice();
 
-            //refreshing the shi if its stale.
-            SnapshotUnitPrice priceSnapshot = item.getLinePrice().getSnapshotUnitPrice();
-            if (priceService.isSnapshotStale(priceSnapshot)) {
-                priceSnapshot = SnapshotUnitPrice.from(productRepo.findById(item.getProductId())
-                        .orElseThrow().getUnitPrice()
-                );
-                item.getLinePrice().setSnapshotUnitPrice(priceSnapshot);
-            }
+            var currentQty = (linePrice != null) ? linePrice.getQuantity() : 1;
 
+            linePrice = priceService.refreshSnapshot(linePrice, () -> {
 
-            cartPrice.getBasePrice().setPrice(item.getLinePrice().effectivePrice());
-        });
+                UnitPrice liveProductPrice = productRepo.findById(item.getProductId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product pricing details missing"))
+                        .getUnitPrice();
 
-        return priceService.applyDiscount(cartPrice);
+                return LinePrice.builder()
+                        .quantity(currentQty)
+                        .unitPrice(liveProductPrice)
+                        .build();
+            });
+
+            item.setFrozenLinePrice(linePrice); // update back into live collection reference
+            cartTotal = cartTotal.add(linePrice.effectivePrice()); // Sum up the pre-calculated line totals securely
+        }
+
+        return UnitPrice.builder()
+                .basePrice(BasePrice.builder().price(cartTotal).build())
+                .discountPercentage(BigDecimal.ZERO)
+                .build();
     }
-
 }

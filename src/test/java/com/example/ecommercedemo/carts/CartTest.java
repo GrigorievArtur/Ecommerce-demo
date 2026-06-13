@@ -11,10 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -40,7 +40,6 @@ public class CartTest {
     @Autowired
     private Helpers helpers;
 
-
     //********************************************************************
     // GET
     //********************************************************************
@@ -52,13 +51,14 @@ public class CartTest {
 
         mockMvc.perform(
                         get("/api/cart")
-//                                .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andReturn();
+                // Verifies that empty carts map smoothly onto your new UnitPrice shape
+                .andExpect(jsonPath("$.price.basePrice.price").value(0))
+                .andExpect(jsonPath("$.price.discountPercentage").value(0));
     }
 
     @Test
@@ -68,21 +68,15 @@ public class CartTest {
 
         var cart = cartRepo.save(Cart.builder().user(user).build());
 
-        var suid = cart.getSuid();
-
         mockMvc.perform(
                         get("/api/cart")
                                 .header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
-//                                .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andReturn();
+                // Verifies structural composition integrity for authenticated contexts
+                .andExpect(jsonPath("$.price.basePrice.price").value(0))
+                .andExpect(jsonPath("$.price.discountPercentage").value(0));
     }
-
-
-
-
-
 }

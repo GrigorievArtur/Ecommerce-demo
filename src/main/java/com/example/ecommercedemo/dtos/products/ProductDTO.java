@@ -1,6 +1,6 @@
 package com.example.ecommercedemo.dtos.products;
 
-import com.example.ecommercedemo.models.common.PriceData;
+
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

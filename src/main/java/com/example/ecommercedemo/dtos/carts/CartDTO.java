@@ -1,14 +1,12 @@
 package com.example.ecommercedemo.dtos.carts;
 
 import com.example.ecommercedemo.dtos.items.ItemDTO;
-import com.example.ecommercedemo.models.common.PriceData;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
