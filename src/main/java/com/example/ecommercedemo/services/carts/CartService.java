@@ -5,18 +5,21 @@ import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
+import com.example.ecommercedemo.models.common.PriceData;
+import com.example.ecommercedemo.models.common.PriceSnapshot;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.snapshots.SnapshotUnitPrice;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
+import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,6 +42,9 @@ public class CartService {
     @Autowired
     private SecurityHelper securityHelper;
 
+    @Autowired
+    private PriceService priceService;
+
 
     // Probably is not redundant 'cause business logic
     public CartDTO getCartDTO(UUID suid) {
@@ -55,8 +61,8 @@ public class CartService {
                 .toList()
         );
 
-        dto.setTotalPrice(calculateBasePrice(cart));
-        dto.setFinalPrice(calculateSalePrice(cart));
+        UnitPrice price = calculatePriceData(cart);
+        dto.setPrice(price);
 
         return dto;
     }
@@ -142,24 +148,27 @@ public class CartService {
 
 
 
-    // This looks so bad 😭
-    private BigDecimal calculateBasePrice(Cart cart) {
-        return cart.getItems().stream().map(cartItem ->
-        {
-          BigDecimal productPrice = productRepo.findById(cartItem.getProductId())
-                  .orElseThrow().getSalePrice();
-          return productPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
-        })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    // This looks so bad 😭 checks if snapshot is valid and calculates total
+    private UnitPrice calculatePriceData(Cart cart) {
+        UnitPrice cartPrice = new UnitPrice();
+        cartPrice.getBasePrice().setPrice(BigDecimal.ZERO);
+
+        cart.getItems().forEach(item -> {
+
+            //refreshing the shi if its stale.
+            SnapshotUnitPrice priceSnapshot = item.getLinePrice().getSnapshotUnitPrice();
+            if (priceService.isSnapshotStale(priceSnapshot)) {
+                priceSnapshot = SnapshotUnitPrice.from(productRepo.findById(item.getProductId())
+                        .orElseThrow().getUnitPrice()
+                );
+                item.getLinePrice().setSnapshotUnitPrice(priceSnapshot);
+            }
+
+
+            cartPrice.getBasePrice().setPrice(item.getLinePrice().effectivePrice());
+        });
+
+        return priceService.applyDiscount(cartPrice);
     }
-
-    private BigDecimal calculateSalePrice(Cart cart){
-        BigDecimal totalPrice = calculateBasePrice(cart);
-        BigDecimal discountPercentage = cart.getDiscountPercentage() == null ? BigDecimal.ZERO : cart.getDiscountPercentage();
-        BigDecimal discountAmount = totalPrice.multiply(discountPercentage).divide(BigDecimal.valueOf(100));
-        return totalPrice.subtract(discountAmount);
-    }
-
-
 
 }

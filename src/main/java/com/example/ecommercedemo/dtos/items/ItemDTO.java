@@ -16,7 +16,9 @@ public class ItemDTO {
 
     private ProductDTO product;
     private int quantity;
-    private BigDecimal basePrice;
+
+//    TODO: REPLACE WITH PriceData
+    private BigDecimal unitPrice;
     private BigDecimal totalPrice;
 
 }

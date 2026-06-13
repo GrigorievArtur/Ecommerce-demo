@@ -1,5 +1,8 @@
 package com.example.ecommercedemo.entities.products;
-
+import com.example.ecommercedemo.models.common.PriceData;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.models.products.ProductMedia;
 import jakarta.persistence.*;
@@ -22,39 +25,53 @@ public class Product {
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(min = 3, max = 150)
+    @Column(nullable = false, length = 150)
     private String name;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(min = 10, max = 5000)
+    @Column(nullable = false, length = 5000)
     private String description;
 
-    @Column(nullable = false)
-    private BigDecimal basePrice;
+    @Embedded
+    private UnitPrice unitPrice;
 
-    @Column(nullable = false)
-    private BigDecimal discountPercentage =  BigDecimal.ZERO;
-
-    @Column(nullable = false)
-    private BigDecimal salePrice;
-
+    @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Category category;
 
+    @Valid
+    @Size(max = 20)
     @ElementCollection
-    @CollectionTable(name = "product_media", joinColumns = @JoinColumn(name = "product_id"))
+    @CollectionTable(
+            name = "product_media",
+            joinColumns = @JoinColumn(name = "product_id")
+    )
     private List<ProductMedia> mediaList;
 
     @PrePersist
     @PreUpdate
     public void calculateSalePrice() {
-        if (this.discountPercentage == null) {
-            this.discountPercentage = BigDecimal.ZERO;
+
+        PriceData price = this.price;
+
+        if (price == null || price.getOriginalPrice() == null) {
+            return;
         }
 
-        BigDecimal discountAmount = this.basePrice
-                .multiply(this.discountPercentage)
+        if (price.getDiscountPercentage() == null) {
+            price.setDiscountPercentage(BigDecimal.ZERO);
+        }
+
+        BigDecimal discountAmount = price.getOriginalPrice()
+                .multiply(price.getDiscountPercentage())
                 .divide(BigDecimal.valueOf(100));
 
-        this.salePrice = this.basePrice.subtract(discountAmount);
+        price.setTotalPrice(
+                price.getOriginalPrice().subtract(discountAmount)
+        );
     }
 }

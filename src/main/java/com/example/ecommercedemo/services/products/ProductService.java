@@ -6,7 +6,7 @@ import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
 import com.example.ecommercedemo.exceptions.ResourceNotFoundException;
 import com.example.ecommercedemo.filters.products.ProductFilter;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.models.carts.ItemModel;
+import com.example.ecommercedemo.models.items.ItemModel;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.specifications.ProductSpecification;
 import lombok.RequiredArgsConstructor;

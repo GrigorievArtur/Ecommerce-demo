@@ -76,7 +76,7 @@ public class ItemUserTest  {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.finalPrice").value(180.0));
+                .andExpect(jsonPath("$.price.totalPrice").value(180.0));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class ItemUserTest  {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.finalPrice").value(90.0));
+                .andExpect(jsonPath("$.price.totalPrice").value(90.0));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class ItemUserTest  {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.finalPrice").value(0.0));
+                .andExpect(jsonPath("$.price.totalPrice").value(0.00));
     }
 
     @Test
@@ -189,6 +189,6 @@ public class ItemUserTest  {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.finalPrice").value(0.0));
+                .andExpect(jsonPath("$.price.totalPrice").value(0.00));
     }
 }

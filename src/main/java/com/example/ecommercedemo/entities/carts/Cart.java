@@ -1,7 +1,9 @@
 package com.example.ecommercedemo.entities.carts;
 
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.carts.ItemModel;
+import com.example.ecommercedemo.models.items.ItemModel;
+import com.example.ecommercedemo.models.pricing.BasePrice;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -34,9 +36,9 @@ public class Cart {
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
+    @Embedded
     @Builder.Default
-    @Column(nullable = false)
-    private BigDecimal discountPercentage =  BigDecimal.ZERO;
+        private UnitPrice price = new UnitPrice();
 
     private Instant expiryDate;
     private Instant lastAccessDate;

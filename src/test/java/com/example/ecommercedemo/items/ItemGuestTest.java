@@ -68,7 +68,7 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.finalPrice").value(BigDecimal.valueOf(180.0000)))
+                .andExpect(jsonPath("$.price.totalPrice").value(BigDecimal.valueOf(180.0000)))
                 .andExpect(status().isOk());
     }
 
@@ -90,7 +90,7 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.finalPrice").value(BigDecimal.valueOf(90.0000)))
+                .andExpect(jsonPath("$.price.totalPrice").value(BigDecimal.valueOf(90.0000)))
                 .andExpect(status().isOk());
     }
 
@@ -112,7 +112,7 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.finalPrice").value(BigDecimal.valueOf(0.0000)))
+                .andExpect(jsonPath("$.price.totalPrice").value(0))
                 .andExpect(status().isOk());
     }
 
@@ -133,7 +133,7 @@ public class ItemGuestTest {
                                 .cookie(new Cookie("suid", suid.toString()))
                 )
                 .andDo(print())
-                .andExpect(jsonPath("$.finalPrice").value(BigDecimal.valueOf(0.0000)))
+                .andExpect(jsonPath("$.price.totalPrice").value(0))
                 .andExpect(status().isOk());
     }
 

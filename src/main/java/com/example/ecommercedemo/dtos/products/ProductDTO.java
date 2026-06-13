@@ -1,5 +1,7 @@
 package com.example.ecommercedemo.dtos.products;
 
+import com.example.ecommercedemo.models.common.PriceData;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,9 +17,7 @@ import java.util.List;
 public class ProductDTO {
     private String name;
     private String description;
-    private BigDecimal basePrice;
-    private BigDecimal discountPercentage;
-    private BigDecimal salePrice;
+    private UnitPrice price;
     private List<ProductMediaDTO> mediaList;
 }
 
