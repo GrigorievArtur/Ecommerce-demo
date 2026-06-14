@@ -1,7 +1,7 @@
-package com.example.ecommercedemo.api.items;
+package com.example.ecommercedemo.api.carts.items;
 
 import com.example.ecommercedemo.dtos.carts.CartDTO;
-import com.example.ecommercedemo.dtos.items.CreateItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;

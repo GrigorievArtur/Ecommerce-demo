@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.models.pricing;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.validation.constraints.*;
@@ -16,7 +17,7 @@ public class UnitPrice {
 
     @NotNull
     @Embedded
-    private BasePrice basePrice;
+    private BasePrice basePrice = new BasePrice();
 
     @NotNull
     @DecimalMin("0.0")
@@ -28,11 +29,11 @@ public class UnitPrice {
     public BigDecimal effectivePrice() {
         BigDecimal original = (basePrice != null) ? basePrice.getPrice() : BigDecimal.ZERO;
         BigDecimal discount = (discountPercentage == null) ? BigDecimal.ZERO : discountPercentage;
-        
+
         BigDecimal discountAmount = original
                 .multiply(discount)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-                
+
         return original.subtract(discountAmount);
     }
 }

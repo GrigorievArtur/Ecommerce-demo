@@ -1,15 +1,15 @@
 package com.example.ecommercedemo.services.items;
 
-import com.example.ecommercedemo.dtos.items.CreateItemDTO;
-import com.example.ecommercedemo.dtos.items.ItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.ItemDTO;
 import com.example.ecommercedemo.entities.products.Product;
-import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.models.pricing.LinePrice;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.pricing.PriceService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 @Service
+@Transactional
 public class ItemService {
 
     @Autowired
@@ -26,8 +27,6 @@ public class ItemService {
     @Autowired
     private ProductMapper productMapper;
 
-    @Autowired
-    private ItemMapper itemMapper;
 
     @Autowired
     private PriceService priceService;
@@ -58,7 +57,7 @@ public class ItemService {
         if (remaining <= 0) {
             items.remove(productId);
         } else {
-            FrozenLinePrice updatedPrice = refreshSnapshot(existingPrice, remaining, productId);
+            FrozenLinePrice updatedPrice = refreshSnapshot(null, remaining, productId);
             items.put(productId, updatedPrice);
         }
     }

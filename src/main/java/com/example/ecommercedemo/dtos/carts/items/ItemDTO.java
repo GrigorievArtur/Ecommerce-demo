@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.dtos.items;
+package com.example.ecommercedemo.dtos.carts.items;
 
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.models.pricing.LinePrice;

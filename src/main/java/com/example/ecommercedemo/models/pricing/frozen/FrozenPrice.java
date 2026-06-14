@@ -13,7 +13,6 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Embeddable
 public class FrozenPrice {
 
     @NotNull

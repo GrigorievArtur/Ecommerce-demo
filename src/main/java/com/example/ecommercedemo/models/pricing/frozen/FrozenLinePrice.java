@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Embeddable
 public class FrozenLinePrice {
 
     @Min(1)

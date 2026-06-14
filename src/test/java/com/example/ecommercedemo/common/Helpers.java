@@ -40,7 +40,6 @@ public class Helpers {
         return jwtService.generateToken(user.getEmail());
     }
 
-
     public User createMockUser(){
         final var email = "test-" + UUID.randomUUID().toString().substring(0, 8) + "@email.com";
         final var userDto = CreateUserDTO.builder()
@@ -65,21 +64,25 @@ public class Helpers {
     }
 
     public Product getSavedProduct(String name, String description, Category category) {
+        // Build the nested BasePrice object explicitly first
+        BasePrice basePriceObj = BasePrice.builder()
+                .price(BigDecimal.valueOf(100))
+                .build();
+
+        // Build the UnitPrice object containing that BasePrice
+        UnitPrice unitPriceObj = UnitPrice.builder()
+                .basePrice(basePriceObj)
+                .discountPercentage(BigDecimal.valueOf(10))
+                .build();
+
         final var product = Product.builder()
                 .name(name)
                 .description(description)
-                .unitPrice(UnitPrice.builder()
-                        .basePrice(
-                                BasePrice.builder()
-                                        .price(BigDecimal.valueOf(100))
-                                        .build())
-                        .discountPercentage(BigDecimal.valueOf(10))
-                        .build())
+                .unitPrice(unitPriceObj)
                 .category(category)
                 .mediaList(List.of())
                 .build();
 
         return productRepo.save(product);
     }
-
 }

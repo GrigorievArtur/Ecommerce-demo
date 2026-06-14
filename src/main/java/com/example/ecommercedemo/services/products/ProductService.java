@@ -6,7 +6,6 @@ import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
 import com.example.ecommercedemo.exceptions.ResourceNotFoundException;
 import com.example.ecommercedemo.filters.products.ProductFilter;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.models.items.ItemModel;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.specifications.ProductSpecification;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +22,6 @@ public class ProductService {
     private final ProductRepo productRepo;
 
     private final ProductMapper productMapper;
-
-    public ProductDTO itemToProductDTO(ItemModel itemModel) {
-        var dto = productRepo.findById(itemModel.getProductId()).orElseThrow();
-        return productMapper.toDTO(dto);
-    }
 
     public Page<ProductDTO> getAllProducts(ProductFilter filter, Pageable pageable) {
         return productRepo.findAll(ProductSpecification.withFilter(filter), pageable)

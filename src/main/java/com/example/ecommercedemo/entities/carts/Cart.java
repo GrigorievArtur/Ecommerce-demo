@@ -1,8 +1,6 @@
 package com.example.ecommercedemo.entities.carts;
 
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.items.ItemModel;
-import com.example.ecommercedemo.models.pricing.BasePrice;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import jakarta.persistence.*;
@@ -10,7 +8,6 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -37,7 +34,11 @@ public class Cart {
 
     @Embedded
     @Builder.Default
-        private UnitPrice price = new UnitPrice();
+    @AttributeOverrides({
+            @AttributeOverride(name = "basePrice.price", column = @Column(name = "cart_base_price")),
+            @AttributeOverride(name = "discountPercentage", column = @Column(name = "cart_discount_percentage"))
+    })
+    private UnitPrice price = new UnitPrice();
 
     private Instant expiryDate;
     private Instant lastAccessDate;

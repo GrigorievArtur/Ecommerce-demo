@@ -1,5 +1,5 @@
 package com.example.ecommercedemo.entities.products;
-import com.example.ecommercedemo.entities.orders.Order;
+import com.example.ecommercedemo.entities.orders.OrderSnapshot;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -11,7 +11,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class FrozenProduct {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    private OrderSnapshot orderSnapshot;
 
     @Valid
     @Size(max = 20)

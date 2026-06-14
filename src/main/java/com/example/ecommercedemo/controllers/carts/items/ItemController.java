@@ -1,10 +1,9 @@
-package com.example.ecommercedemo.controllers.items;
+package com.example.ecommercedemo.controllers.carts.items;
 
-import com.example.ecommercedemo.api.items.ItemAPI;
+import com.example.ecommercedemo.api.carts.items.ItemAPI;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
-import com.example.ecommercedemo.dtos.items.CreateItemDTO;
+import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.services.carts.CartService;
-import com.example.ecommercedemo.services.items.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;

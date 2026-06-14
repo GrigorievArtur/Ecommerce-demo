@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.models.pricing.frozen;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
 import jakarta.validation.constraints.DecimalMax;
@@ -16,7 +17,6 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Embeddable
 public class FrozenUnitPrice {
 
     @NotNull
