@@ -2,10 +2,9 @@ package com.example.ecommercedemo.services.items;
 
 import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.dtos.items.ItemDTO;
-import com.example.ecommercedemo.dtos.products.ProductDTO;
+import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.mappers.items.ItemMapper;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.models.items.ItemModel;
 import com.example.ecommercedemo.models.pricing.LinePrice;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
@@ -16,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.Map;
 
 @Service
 public class ItemService {
@@ -33,95 +32,77 @@ public class ItemService {
     @Autowired
     private PriceService priceService;
 
-    public void addItem(List<ItemModel> items, CreateItemDTO createItemDTO) {
-        var item = findCartItemModelInCart(items, createItemDTO.getProductId());
+    public void addItem(Map<Long, FrozenLinePrice> items, CreateItemDTO createItemDTO) {
+        Long productId = createItemDTO.getProductId();
 
-        if (item == null) {
-            ItemModel itemModel = itemMapper.toModel(createItemDTO);
-
-            // Using refreshSnapshot with a null initial state forces standard initial creation
-            // inside your pricing engine via clean lambda structure, uhhh 🥲
-            FrozenLinePrice frozenLinePrice = priceService.refreshSnapshot(null, () -> {
-                UnitPrice liveUnitPrice = productRepo.findById(createItemDTO.getProductId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"))
-                        .getUnitPrice();
-
-                return LinePrice.builder()
-                        .quantity(createItemDTO.getQuantity())
-                        .unitPrice(liveUnitPrice)
-                        .build();
-            });
-
-            itemModel.setFrozenLinePrice(frozenLinePrice);
-            items.add(itemModel);
+        if (!items.containsKey(productId)) {
+            FrozenLinePrice frozenLinePrice = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
+            items.put(productId, frozenLinePrice);
         } else {
-            var linePrice = item.getFrozenLinePrice();
-            linePrice.setQuantity(linePrice.getQuantity() + createItemDTO.getQuantity());
+            FrozenLinePrice existingPrice = items.get(productId);
+            int newQuantity = existingPrice.getQuantity() + createItemDTO.getQuantity();
+
+            FrozenLinePrice updatedPrice = refreshSnapshot(existingPrice, newQuantity, productId);
+            items.put(productId, updatedPrice);
         }
     }
 
-    public void decrementItem(List<ItemModel> items, Long productId, int quantity) {
-        var item = findCartItemModelInCart(items, productId);
-
-        if (item == null) {
+    public void decrementItem(Map<Long, FrozenLinePrice> items, Long productId, int quantity) {
+        if (!items.containsKey(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
         }
 
-        int remaining = item.getFrozenLinePrice().getQuantity() - quantity;
+        FrozenLinePrice existingPrice = items.get(productId);
+        int remaining = existingPrice.getQuantity() - quantity;
 
         if (remaining <= 0) {
-            items.remove(item);
+            items.remove(productId);
         } else {
-            item.getFrozenLinePrice().setQuantity(remaining);
+            FrozenLinePrice updatedPrice = refreshSnapshot(existingPrice, remaining, productId);
+            items.put(productId, updatedPrice);
         }
     }
 
-    public void removeItem(List<ItemModel> items, Long productId) {
-        var item = findCartItemModelInCart(items, productId);
-
-        if (item == null) {
+    public void removeItem(Map<Long, FrozenLinePrice> items, Long productId) {
+        if (!items.containsKey(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
         }
-
-        items.remove(item);
+        items.remove(productId);
     }
 
-    public ItemDTO toDTO(ItemModel itemModel) {
-        ItemDTO dto = itemMapper.toDTO(itemModel);
+    public ItemDTO toDTO(Long productId, FrozenLinePrice frozenLinePrice, Map<Long, Product> productMap) {
+        Product product = productMap.get(productId);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found for id: " + productId);
+        }
 
-        ProductDTO productDTO = productMapper.toDTO(
-                productRepo.findById(itemModel.getProductId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"))
-        );
-        dto.setProduct(productDTO);
+        int currentQty = frozenLinePrice.getQuantity();
+        FrozenLinePrice updatedPrice = priceService.refreshSnapshot(frozenLinePrice, () -> {
+            return LinePrice.builder()
+                    .quantity(currentQty)
+                    .unitPrice(product.getUnitPrice())
+                    .build();
+        });
 
-        FrozenLinePrice frozenLinePrice = itemModel.getFrozenLinePrice();
+        // Mutate the reference mapping context to keep database snapshot updated
+        frozenLinePrice.setFrozenUnitPrice(updatedPrice.getFrozenUnitPrice());
 
-        int currentQty = (frozenLinePrice != null) ? frozenLinePrice.getQuantity() : 1;
-        frozenLinePrice = priceService.refreshSnapshot(frozenLinePrice, () -> {
-            UnitPrice liveProductPrice = productRepo.findById(itemModel.getProductId())
+        return ItemDTO.builder()
+                .product(productMapper.toDTO(product))
+                .frozenLinePrice(frozenLinePrice)
+                .build();
+    }
+
+    private FrozenLinePrice refreshSnapshot(FrozenLinePrice original, int quantity, Long productId) {
+        return priceService.refreshSnapshot(original, () -> {
+            UnitPrice liveUnitPrice = productRepo.findById(productId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"))
                     .getUnitPrice();
 
             return LinePrice.builder()
-                    .quantity(currentQty)
-                    .unitPrice(liveProductPrice)
+                    .quantity(quantity)
+                    .unitPrice(liveUnitPrice)
                     .build();
         });
-
-        // Persist updated snapshot back into your structural reference layout context
-        itemModel.setFrozenLinePrice(frozenLinePrice);
-
-        dto.setUnitPrice(frozenLinePrice.getFrozenUnitPrice().getFrozenPrice().effectivePrice());
-        dto.setTotalPrice(frozenLinePrice.effectivePrice());
-
-        return dto;
-    }
-
-    private ItemModel findCartItemModelInCart(List<ItemModel> items, Long productId) {
-        return items.stream()
-                .filter(cartItem -> cartItem.getProductId().equals(productId))
-                .findFirst()
-                .orElse(null);
     }
 }

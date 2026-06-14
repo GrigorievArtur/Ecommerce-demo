@@ -1,6 +1,9 @@
 package com.example.ecommercedemo.dtos.items;
 
 import com.example.ecommercedemo.dtos.products.ProductDTO;
+import com.example.ecommercedemo.models.pricing.LinePrice;
+import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,10 +18,5 @@ import java.math.BigDecimal;
 public class ItemDTO {
 
     private ProductDTO product;
-    private int quantity;
-
-//    TODO: REPLACE WITH PriceData
-    private BigDecimal unitPrice;
-    private BigDecimal totalPrice;
-
+    private FrozenLinePrice frozenLinePrice;
 }

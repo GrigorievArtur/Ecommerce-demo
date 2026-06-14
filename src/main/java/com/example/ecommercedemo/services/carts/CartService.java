@@ -4,6 +4,7 @@ import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
+import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.models.pricing.BasePrice;
@@ -23,8 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -55,14 +57,20 @@ public class CartService {
 
     public CartDTO getCartDTO(Cart cart) {
         CartDTO dto = cartMapper.cartToCartDTO(cart);
+        Map<Long, Product> productMap = productRepo.findAllById(new ArrayList<>(cart.getItems().keySet()))
+                .stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         dto.setItems(
-                cart.getItems().stream()
-                        .map(itemService::toDTO)
+
+                cart.getItems().entrySet().stream()
+                        .map(entry -> {
+                            return itemService.toDTO(entry.getKey(), entry.getValue(), productMap);
+                        })
                         .toList()
         );
 
-        UnitPrice price = calculatePriceData(cart);
+        UnitPrice price = calculatePriceData(cart, productMap);
         dto.setPrice(price);
 
         return dto;
@@ -145,29 +153,26 @@ public class CartService {
         return cartRepo.save(cart);
     }
 
-//    Just calculation of price for the cart
-    private UnitPrice calculatePriceData(Cart cart) {
+    // Just calculation of price for the cart
+    private UnitPrice calculatePriceData(Cart cart, Map<Long, Product> productMap) {
         BigDecimal cartTotal = BigDecimal.ZERO;
 
-        for (var item : cart.getItems()) {
-            FrozenLinePrice linePrice = item.getFrozenLinePrice();
+        for (Map.Entry<Long, FrozenLinePrice> entry : cart.getItems().entrySet()) {
+            Long productId = entry.getKey();
+            Product product = productMap.get(productId); // guaranteed to exist
 
-            var currentQty = (linePrice != null) ? linePrice.getQuantity() : 1;
+            FrozenLinePrice frozenLinePrice = entry.getValue();
+            var currentQty = (frozenLinePrice != null) ? frozenLinePrice.getQuantity() : 1;
 
-            linePrice = priceService.refreshSnapshot(linePrice, () -> {
+            frozenLinePrice = priceService.refreshSnapshot(frozenLinePrice, () ->
+                    LinePrice.builder()
+                            .quantity(currentQty)
+                            .unitPrice(product.getUnitPrice())
+                            .build()
+            );
 
-                UnitPrice liveProductPrice = productRepo.findById(item.getProductId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product pricing details missing"))
-                        .getUnitPrice();
-
-                return LinePrice.builder()
-                        .quantity(currentQty)
-                        .unitPrice(liveProductPrice)
-                        .build();
-            });
-
-            item.setFrozenLinePrice(linePrice); // update back into live collection reference
-            cartTotal = cartTotal.add(linePrice.effectivePrice()); // Sum up the pre-calculated line totals securely
+            entry.setValue(frozenLinePrice);
+            cartTotal = cartTotal.add(frozenLinePrice.effectivePrice());
         }
 
         return UnitPrice.builder()

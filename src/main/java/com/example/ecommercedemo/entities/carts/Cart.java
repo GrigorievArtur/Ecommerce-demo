@@ -4,6 +4,7 @@ import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.models.items.ItemModel;
 import com.example.ecommercedemo.models.pricing.BasePrice;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -12,9 +13,7 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 @Setter
@@ -47,7 +46,7 @@ public class Cart {
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private List<ItemModel> items = new ArrayList<>();
+    private Map<Long, FrozenLinePrice> items = new HashMap<>();
 
     @PrePersist
     public void onCreate() {
