@@ -50,28 +50,4 @@ public class Product {
             joinColumns = @JoinColumn(name = "product_id")
     )
     private List<ProductMedia> mediaList;
-
-    // Not needed since we calculate the total directly using effectivePrice on unitPrice
-//    @PrePersist
-//    @PreUpdate
-//    public void calculateSalePrice() {
-//
-//        UnitPrice price = this.unitPrice;
-//
-//        if (price == null || price.getBasePrice() == null) {
-//            return;
-//        }
-//
-//        if (price.getDiscountPercentage() == null) {
-//            price.setDiscountPercentage(BigDecimal.ZERO);
-//        }
-//
-//        BigDecimal discountAmount = price.getOriginalPrice()
-//                .multiply(price.getDiscountPercentage())
-//                .divide(BigDecimal.valueOf(100));
-//
-//        price.setTotalPrice(
-//                price.getOriginalPrice().subtract(discountAmount)
-//        );
-//    }
 }
