@@ -1,4 +1,4 @@
-package com.example.ecommercedemo.services;
+package com.example.ecommercedemo.services.orders;
 
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;

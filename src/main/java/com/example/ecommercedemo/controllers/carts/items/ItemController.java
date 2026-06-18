@@ -6,11 +6,13 @@ import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.services.carts.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
 @RestController
+@Transactional
 public class ItemController implements ItemAPI {
 
     @Autowired

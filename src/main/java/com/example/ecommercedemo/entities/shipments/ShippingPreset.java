@@ -19,6 +19,8 @@ public class ShippingPreset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    //TODO : ADD VALIDATION
+
     // e.g., "Home", "Work", "Mom's House"
     private String presetName;
     private boolean isDefault;

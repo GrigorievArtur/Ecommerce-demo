@@ -2,15 +2,20 @@ package com.example.ecommercedemo.entities.orders;
 
 import com.example.ecommercedemo.entities.products.FrozenProduct;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import com.example.ecommercedemo.models.shipping.ShippingModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Entity
@@ -32,10 +37,10 @@ public class OrderSnapshot {
     @Embedded
     private ShippingModel shippingModel;
 
-    @OneToMany(mappedBy = "orderSnapshot", cascade = CascadeType.ALL)
-    private List<FrozenProduct> products = new ArrayList<>();
-
-
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private Map<Long, FrozenLinePrice> items = new HashMap<>();
 
 
 }
