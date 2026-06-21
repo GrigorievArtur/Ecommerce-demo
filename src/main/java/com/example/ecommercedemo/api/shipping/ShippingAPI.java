@@ -1,8 +1,7 @@
 package com.example.ecommercedemo.api.shipping;
-
-import com.example.ecommercedemo.dtos.shipping.CreateShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.ShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.UpdateShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.ShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.UpdateShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

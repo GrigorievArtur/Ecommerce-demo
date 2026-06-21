@@ -1,9 +1,9 @@
 package com.example.ecommercedemo.controllers.shipping;
 
 import com.example.ecommercedemo.api.shipping.ShippingAPI;
-import com.example.ecommercedemo.dtos.shipping.CreateShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.ShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.UpdateShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.ShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.UpdateShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.services.shipping.ShippingPresetService;
 import org.springframework.beans.factory.annotation.Autowired;

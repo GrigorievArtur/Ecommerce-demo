@@ -1,13 +1,14 @@
 package com.example.ecommercedemo.mappers.shipping;
 
-import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
-import com.example.ecommercedemo.dtos.shipping.CreateShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.ShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipping.UpdateShippingPresetDTO;
-import com.example.ecommercedemo.entities.products.Product;
+import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.ShippingPresetDTO;
+import com.example.ecommercedemo.dtos.shipments.UpdateShippingPresetDTO;
 import com.example.ecommercedemo.entities.shipments.ShippingPreset;
 import com.example.ecommercedemo.models.shipping.ShippingModel;
-import org.mapstruct.*;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public interface ShippingMapper {
