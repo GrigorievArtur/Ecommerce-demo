@@ -6,17 +6,20 @@ import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
 import com.example.ecommercedemo.services.products.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequiredArgsConstructor
 @Transactional
-public class ProductAdminController implements ProductAdminAPI {
+@RequestMapping("api/admin/products")
+public class ProductAdminApiImpl implements ProductAdminAPI {
 
-    private final ProductService productService;
+    @Autowired
+    private ProductService productService;
 
     @Override
     public ResponseEntity<ProductDTO> addProduct(CreateProductDTO createProductDTO) {
@@ -28,10 +31,12 @@ public class ProductAdminController implements ProductAdminAPI {
         return new ResponseEntity<>(productService.updateProductById(id, updateProductDTO), HttpStatus.OK);
     }
 
+    // api/admin/products?id=2
+    // api/admin/products/2
 
     @Override
     public ResponseEntity<Void> deleteProduct(Long id) {
         productService.deleteProductById(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

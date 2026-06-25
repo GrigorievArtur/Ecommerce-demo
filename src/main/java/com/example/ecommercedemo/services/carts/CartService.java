@@ -102,7 +102,7 @@ public class CartService {
     }
 
     private Cart getUserCart(User user, UUID suid) {
-        Optional<Cart> userCart = cartRepo.findByUser_Id(user.getId());
+        Optional<Cart> userCart = cartRepo.findByUserId(user.getId());
 
         if (suid == null) {
             return userCart.orElseGet(() -> createUserCart(user));

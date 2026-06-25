@@ -40,6 +40,12 @@ public class Cart {
     })
     private UnitPrice price = new UnitPrice();
 
+    // grossPrice // base price
+    // grossAmount // base price * qty inclus discountable
+    // grossDiscount
+    // percentageDiscount
+    // qty
+
     private Instant expiryDate;
     private Instant lastAccessDate;
     private Instant creationDate;
@@ -72,5 +78,16 @@ public class Cart {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Cart cart = (Cart) o;
+        return Objects.equals(id, cart.id) && Objects.equals(suid, cart.suid) && Objects.equals(user, cart.user) && Objects.equals(price, cart.price) && Objects.equals(expiryDate, cart.expiryDate) && Objects.equals(lastAccessDate, cart.lastAccessDate) && Objects.equals(creationDate, cart.creationDate) && Objects.equals(items, cart.items);
+    }
+
+    @Override
+    public int hashCode() {
+        return 123;
+    }
 }
 

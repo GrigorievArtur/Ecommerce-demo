@@ -26,7 +26,7 @@ public class CreateShippingPresetDTO {
     @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "Phone number is required")
+    @NotBlank(message = "{message.notnull}")
     private String phoneNumber;
 
     @NotBlank(message = "Country is required")

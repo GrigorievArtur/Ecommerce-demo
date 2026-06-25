@@ -16,5 +16,6 @@ public class ProductMediaDTO {
 
     @Enumerated(EnumType.STRING)
     private MediaTypes mediaType;
+
     private String url;
 }

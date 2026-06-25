@@ -14,12 +14,17 @@ import java.math.BigDecimal;
 @Embeddable
 public class LinePrice {
 
+    // grossPrice // base price
+    // grossAmount // base price * qty inclus discountable
+    // grossDiscount
+    // percentageDiscount
+    // qty
+
     @Min(1)
     @Builder.Default
     private int quantity = 1;
 
     @NotNull
-    @Embedded
     private UnitPrice unitPrice;
 
     public BigDecimal effectivePrice() {

@@ -2,15 +2,16 @@ package com.example.ecommercedemo.services.pricing;
 
 import com.example.ecommercedemo.models.pricing.BasePrice;
 import com.example.ecommercedemo.models.pricing.LinePrice;
+import com.example.ecommercedemo.models.pricing.Price;
 import com.example.ecommercedemo.models.pricing.UnitPrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenPrice;
 import com.example.ecommercedemo.models.pricing.frozen.FrozenUnitPrice;
 import jakarta.annotation.PostConstruct;
-import jakarta.el.LambdaExpression;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
@@ -86,4 +87,18 @@ public class PriceService {
         }
         return snapshot;
     }
+
+    public Price calculateGrossAmount(Price price) {
+        if (price == null) return null;
+
+        BigDecimal grossPrice = price.getGrossPrice() != null ? price.getGrossPrice() : BigDecimal.ZERO;
+        BigDecimal qty = price.getQuantity() != null ? price.getQuantity() : BigDecimal.ZERO;
+
+        // grossAmount = grossPrice * quantity  (base line total before discounts)
+        BigDecimal grossAmount = grossPrice.multiply(qty);
+        price.setGrossAmount(grossAmount);
+
+        return price;
+    }
+
 }

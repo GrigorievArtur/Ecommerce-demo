@@ -2,11 +2,14 @@ package com.example.ecommercedemo.products;
 
 import com.example.ecommercedemo.common.Helpers;
 import com.example.ecommercedemo.dtos.products.CreateProductDTO;
+import com.example.ecommercedemo.dtos.products.ProductDTO;
+import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.products.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -67,7 +70,7 @@ public class ProductsAdminTest {
                 .category(Category.DEMO1)
                 .build();
 
-        mockMvc.perform(
+        final var mvcResult = mockMvc.perform(
                         post("/api/admin/products")
                                 .header("Authorization", "Bearer " + admin_token)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +80,10 @@ public class ProductsAdminTest {
                 .andExpect(status().isCreated())
 
                 .andExpect(jsonPath("$.name").value("Test Product"))
-                .andExpect(jsonPath("$.description").value("Test Description"));
+                .andExpect(jsonPath("$.description").value("Test Description")).andReturn();
+
+        final var productDto = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), ProductDTO.class);
+        Assertions.assertEquals(product_dto.getName(), productDto.getName());
     }
 
     @Test

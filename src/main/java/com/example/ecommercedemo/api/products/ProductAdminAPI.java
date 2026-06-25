@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("api/admin/products")
 @Tag(name = "Admin Products CRUD")
 public interface ProductAdminAPI {
 
@@ -29,6 +28,8 @@ public interface ProductAdminAPI {
     @Operation(
             summary = "Delete product"
     )
+
+
     @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
     ResponseEntity<Void> deleteProduct(@RequestParam Long id);

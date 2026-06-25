@@ -16,7 +16,6 @@ import java.math.RoundingMode;
 public class UnitPrice {
 
     @NotNull
-    @Embedded
     private BasePrice basePrice = new BasePrice();
 
     @NotNull
