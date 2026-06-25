@@ -2,11 +2,8 @@ package com.example.ecommercedemo.entities.carts;
 
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.models.pricing.Price;
-import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,9 +42,8 @@ public class Cart {
     private Instant creationDate;
 
     @Builder.Default
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
-    private Map<Long, PriceSnapshot> items = new HashMap<>();
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> items = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {
@@ -74,14 +70,14 @@ public class Cart {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        Cart cart = (Cart) o;
-        return Objects.equals(id, cart.id) && Objects.equals(suid, cart.suid) && Objects.equals(user, cart.user) && Objects.equals(price, cart.price) && Objects.equals(expiryDate, cart.expiryDate) && Objects.equals(lastAccessDate, cart.lastAccessDate) && Objects.equals(creationDate, cart.creationDate) && Objects.equals(items, cart.items);
+        if (this == o) return true;
+        if (!(o instanceof Cart cart)) return false;
+        return Objects.equals(id, cart.id) && Objects.equals(suid, cart.suid);
     }
 
     @Override
     public int hashCode() {
-        return 123;
+        return Objects.hash(id, suid);
     }
-}
 
+}

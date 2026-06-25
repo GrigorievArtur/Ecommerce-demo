@@ -2,6 +2,8 @@ package com.example.ecommercedemo.services.items;
 
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.dtos.carts.items.ItemDTO;
+import com.example.ecommercedemo.entities.carts.Cart;
+import com.example.ecommercedemo.entities.carts.CartItem;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.models.pricing.Price;
@@ -15,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -30,69 +34,82 @@ public class ItemService {
     @Autowired
     private PriceService priceService;
 
-    public void addItem(Map<Long, PriceSnapshot> items, CreateItemDTO createItemDTO) {
+    public void addItem(Cart cart, CreateItemDTO createItemDTO) {
         Long productId = createItemDTO.getProductId();
+        List<CartItem> items = cart.getItems();
 
-        if (!items.containsKey(productId)) {
+        Optional<CartItem> existing = items.stream()
+                .filter(i -> i.getProductId().equals(productId))
+                .findFirst();
+
+        if (existing.isEmpty()) {
             PriceSnapshot snapshot = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
-            items.put(productId, snapshot);
+            CartItem item = CartItem.builder()
+                    .cart(cart)
+                    .productId(productId)
+                    .priceSnapshot(snapshot)
+                    .build();
+            items.add(item);
         } else {
-            PriceSnapshot existing = items.get(productId);
-            int newQuantity = existing.getQuantity().intValue() + createItemDTO.getQuantity();
-
-            PriceSnapshot updated = refreshSnapshot(existing, newQuantity, productId);
-            items.put(productId, updated);
+            CartItem item = existing.get();
+            int currentQty = item.getPriceSnapshot().getQuantity().intValue();
+            int newQty = currentQty + createItemDTO.getQuantity();
+            PriceSnapshot updated = refreshSnapshot(item.getPriceSnapshot(), newQty, productId);
+            item.setPriceSnapshot(updated);
         }
     }
 
-    public void decrementItem(Map<Long, PriceSnapshot> items, Long productId, int quantity) {
-        if (!items.containsKey(productId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
-        }
+    public void decrementItem(Cart cart, Long productId, int quantity) {
+        CartItem item = findByProductId(cart, productId);
 
-        PriceSnapshot existing = items.get(productId);
-        int remaining = existing.getQuantity().intValue() - quantity;
+        int remaining = item.getPriceSnapshot().getQuantity().intValue() - quantity;
 
         if (remaining <= 0) {
-            items.remove(productId);
+            cart.getItems().remove(item);
+            item.setCart(null); // break reference for orphan removal
         } else {
             PriceSnapshot updated = refreshSnapshot(null, remaining, productId);
-            items.put(productId, updated);
+            item.setPriceSnapshot(updated);
         }
     }
 
-    public void removeItem(Map<Long, PriceSnapshot> items, Long productId) {
-        if (!items.containsKey(productId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
-        }
-        items.remove(productId);
+    public void removeItem(Cart cart, Long productId) {
+        CartItem item = findByProductId(cart, productId);
+        cart.getItems().remove(item);
+        item.setCart(null);
     }
 
-    public ItemDTO toDTO(Long productId, PriceSnapshot snapshot, Map<Long, Product> productMap) {
+    public ItemDTO toDTO(CartItem item, Map<Long, Product> productMap) {
+        Long productId = item.getProductId();
         Product product = productMap.get(productId);
         if (product == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found for id: " + productId);
         }
 
+        PriceSnapshot snapshot = item.getPriceSnapshot();
         int currentQty = snapshot.getQuantity().intValue();
-        PriceSnapshot updated = priceService.refreshSnapshot(snapshot, () -> {
-            Price livePrice = product.getPrice().toBuilder()
-                    .quantity(BigDecimal.valueOf(currentQty))
-                    .build();
-            return livePrice;
-        });
 
-        // Mutate the reference to keep the in-memory map updated
-        snapshot.setQuantity(updated.getQuantity());
-        snapshot.setGrossPrice(updated.getGrossPrice());
-        snapshot.setGrossAmount(updated.getGrossAmount());
-        snapshot.setPercentageDiscount(updated.getPercentageDiscount());
-        snapshot.setTimestamp(updated.getTimestamp());
+        PriceSnapshot updated = priceService.refreshSnapshot(snapshot, () ->
+                product.getPrice().toBuilder()
+                        .quantity(BigDecimal.valueOf(currentQty))
+                        .build()
+        );
+
+        item.setPriceSnapshot(updated);
 
         return ItemDTO.builder()
                 .product(productMapper.toDTO(product))
-                .priceSnapshot(snapshot)
+                .priceSnapshot(item.getPriceSnapshot())
                 .build();
+    }
+
+    // --- helpers ---
+
+    private CartItem findByProductId(Cart cart, Long productId) {
+        return cart.getItems().stream()
+                .filter(i -> i.getProductId().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart"));
     }
 
     private PriceSnapshot refreshSnapshot(PriceSnapshot original, int quantity, Long productId) {

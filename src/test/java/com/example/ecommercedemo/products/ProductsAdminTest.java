@@ -174,7 +174,7 @@ public class ProductsAdminTest {
                                 .param("id", product.getId().toString())
                 )
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
     }
     @Test

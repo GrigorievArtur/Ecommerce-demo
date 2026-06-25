@@ -4,11 +4,11 @@ import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
+import com.example.ecommercedemo.entities.carts.CartItem;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.models.pricing.Price;
-import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
@@ -51,13 +51,17 @@ public class CartService {
 
     public CartDTO getCartDTO(Cart cart) {
         CartDTO dto = cartMapper.cartToCartDTO(cart);
-        Map<Long, Product> productMap = productRepo.findAllById(new ArrayList<>(cart.getItems().keySet()))
+
+        Set<Long> productIds = cart.getItems().stream()
+                .map(CartItem::getProductId)
+                .collect(Collectors.toSet());
+        Map<Long, Product> productMap = productRepo.findAllById(productIds)
                 .stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         dto.setItems(
-                cart.getItems().entrySet().stream()
-                        .map(entry -> itemService.toDTO(entry.getKey(), entry.getValue(), productMap))
+                cart.getItems().stream()
+                        .map(item -> itemService.toDTO(item, productMap))
                         .toList()
         );
 
@@ -69,26 +73,27 @@ public class CartService {
 
     public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
         var cart = getCart(suid);
-        itemService.addItem(cart.getItems(), request);
+        itemService.addItem(cart, request);
         var savedCart = cartRepo.save(cart);
         return getCartDTO(savedCart);
     }
 
     public CartDTO decreaseItemFromCart(Long productId, int quantity, UUID suid) {
         var cart = getCart(suid);
-        itemService.decrementItem(cart.getItems(), productId, quantity);
+        itemService.decrementItem(cart, productId, quantity);
         var savedCart = cartRepo.save(cart);
         return getCartDTO(savedCart);
     }
 
     public CartDTO removeItemFromCart(Long productId, UUID suid) {
         var cart = getCart(suid);
-        itemService.removeItem(cart.getItems(), productId);
+        itemService.removeItem(cart, productId);
         var savedCart = cartRepo.save(cart);
         return getCartDTO(savedCart);
     }
 
     // --- Internal cart resolution ---
+
     public Cart getCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .map(user -> getUserCart(user, suid))
@@ -147,21 +152,21 @@ public class CartService {
     private Price calculateCartTotal(Cart cart, Map<Long, Product> productMap) {
         BigDecimal cartTotal = BigDecimal.ZERO;
 
-        for (Map.Entry<Long, PriceSnapshot> entry : cart.getItems().entrySet()) {
-            Long productId = entry.getKey();
-            Product product = productMap.get(productId);
+        for (CartItem item : cart.getItems()) {
+            Product product = productMap.get(item.getProductId());
+            if (product == null) continue;
 
-            PriceSnapshot snapshot = entry.getValue();
-            int currentQty = (snapshot != null) ? snapshot.getQuantity().intValue() : 1;
+            int currentQty = item.getPriceSnapshot().getQuantity().intValue();
 
-            snapshot = priceService.refreshSnapshot(snapshot, () ->
-                    product.getPrice().toBuilder()
-                            .quantity(BigDecimal.valueOf(currentQty))
-                            .build()
+            item.setPriceSnapshot(
+                    priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
+                            product.getPrice().toBuilder()
+                                    .quantity(BigDecimal.valueOf(currentQty))
+                                    .build()
+                    )
             );
 
-            entry.setValue(snapshot);
-            cartTotal = cartTotal.add(priceService.effectivePrice(snapshot));
+            cartTotal = cartTotal.add(priceService.effectivePrice(item.getPriceSnapshot()));
         }
 
         return Price.builder()
