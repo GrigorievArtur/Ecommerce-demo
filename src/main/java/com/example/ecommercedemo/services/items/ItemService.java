@@ -4,9 +4,8 @@ import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.dtos.carts.items.ItemDTO;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.models.pricing.LinePrice;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.Price;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
@@ -15,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Service
@@ -27,80 +27,80 @@ public class ItemService {
     @Autowired
     private ProductMapper productMapper;
 
-
     @Autowired
     private PriceService priceService;
 
-    public void addItem(Map<Long, FrozenLinePrice> items, CreateItemDTO createItemDTO) {
+    public void addItem(Map<Long, PriceSnapshot> items, CreateItemDTO createItemDTO) {
         Long productId = createItemDTO.getProductId();
 
         if (!items.containsKey(productId)) {
-            FrozenLinePrice frozenLinePrice = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
-            items.put(productId, frozenLinePrice);
+            PriceSnapshot snapshot = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
+            items.put(productId, snapshot);
         } else {
-            FrozenLinePrice existingPrice = items.get(productId);
-            int newQuantity = existingPrice.getQuantity() + createItemDTO.getQuantity();
+            PriceSnapshot existing = items.get(productId);
+            int newQuantity = existing.getQuantity().intValue() + createItemDTO.getQuantity();
 
-            FrozenLinePrice updatedPrice = refreshSnapshot(existingPrice, newQuantity, productId);
-            items.put(productId, updatedPrice);
+            PriceSnapshot updated = refreshSnapshot(existing, newQuantity, productId);
+            items.put(productId, updated);
         }
     }
 
-    public void decrementItem(Map<Long, FrozenLinePrice> items, Long productId, int quantity) {
+    public void decrementItem(Map<Long, PriceSnapshot> items, Long productId, int quantity) {
         if (!items.containsKey(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
         }
 
-        FrozenLinePrice existingPrice = items.get(productId);
-        int remaining = existingPrice.getQuantity() - quantity;
+        PriceSnapshot existing = items.get(productId);
+        int remaining = existing.getQuantity().intValue() - quantity;
 
         if (remaining <= 0) {
             items.remove(productId);
         } else {
-            FrozenLinePrice updatedPrice = refreshSnapshot(null, remaining, productId);
-            items.put(productId, updatedPrice);
+            PriceSnapshot updated = refreshSnapshot(null, remaining, productId);
+            items.put(productId, updated);
         }
     }
 
-    public void removeItem(Map<Long, FrozenLinePrice> items, Long productId) {
+    public void removeItem(Map<Long, PriceSnapshot> items, Long productId) {
         if (!items.containsKey(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart");
         }
         items.remove(productId);
     }
 
-    public ItemDTO toDTO(Long productId, FrozenLinePrice frozenLinePrice, Map<Long, Product> productMap) {
+    public ItemDTO toDTO(Long productId, PriceSnapshot snapshot, Map<Long, Product> productMap) {
         Product product = productMap.get(productId);
         if (product == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found for id: " + productId);
         }
 
-        int currentQty = frozenLinePrice.getQuantity();
-        FrozenLinePrice updatedPrice = priceService.refreshSnapshot(frozenLinePrice, () -> {
-            return LinePrice.builder()
-                    .quantity(currentQty)
-                    .unitPrice(product.getUnitPrice())
+        int currentQty = snapshot.getQuantity().intValue();
+        PriceSnapshot updated = priceService.refreshSnapshot(snapshot, () -> {
+            Price livePrice = product.getPrice().toBuilder()
+                    .quantity(BigDecimal.valueOf(currentQty))
                     .build();
+            return livePrice;
         });
 
-        // Mutate the reference mapping context to keep database snapshot updated
-        frozenLinePrice.setFrozenUnitPrice(updatedPrice.getFrozenUnitPrice());
+        // Mutate the reference to keep the in-memory map updated
+        snapshot.setQuantity(updated.getQuantity());
+        snapshot.setGrossPrice(updated.getGrossPrice());
+        snapshot.setGrossAmount(updated.getGrossAmount());
+        snapshot.setPercentageDiscount(updated.getPercentageDiscount());
+        snapshot.setTimestamp(updated.getTimestamp());
 
         return ItemDTO.builder()
                 .product(productMapper.toDTO(product))
-                .frozenLinePrice(frozenLinePrice)
+                .priceSnapshot(snapshot)
                 .build();
     }
 
-    private FrozenLinePrice refreshSnapshot(FrozenLinePrice original, int quantity, Long productId) {
+    private PriceSnapshot refreshSnapshot(PriceSnapshot original, int quantity, Long productId) {
         return priceService.refreshSnapshot(original, () -> {
-            UnitPrice liveUnitPrice = productRepo.findById(productId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"))
-                    .getUnitPrice();
-
-            return LinePrice.builder()
-                    .quantity(quantity)
-                    .unitPrice(liveUnitPrice)
+            Product product = productRepo.findById(productId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+            return product.getPrice().toBuilder()
+                    .quantity(BigDecimal.valueOf(quantity))
                     .build();
         });
     }

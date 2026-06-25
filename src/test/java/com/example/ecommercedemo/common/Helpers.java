@@ -4,8 +4,7 @@ import com.example.ecommercedemo.dtos.users.CreateUserDTO;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.enums.products.Category;
-import com.example.ecommercedemo.models.pricing.BasePrice;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.Price;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.jwt.JwtService;
 import com.example.ecommercedemo.services.users.UserService;
@@ -64,21 +63,16 @@ public class Helpers {
     }
 
     public Product getSavedProduct(String name, String description, Category category) {
-        // Build the nested BasePrice object explicitly first
-        BasePrice basePriceObj = BasePrice.builder()
-                .price(BigDecimal.valueOf(100))
-                .build();
-
-        // Build the UnitPrice object containing that BasePrice
-        UnitPrice unitPriceObj = UnitPrice.builder()
-                .basePrice(basePriceObj)
-                .discountPercentage(BigDecimal.valueOf(10))
+        Price price = Price.builder()
+                .grossPrice(BigDecimal.valueOf(100))
+                .percentageDiscount(BigDecimal.valueOf(10))
+                .quantity(BigDecimal.ONE)
                 .build();
 
         final var product = Product.builder()
                 .name(name)
                 .description(description)
-                .unitPrice(unitPriceObj)
+                .price(price)
                 .category(category)
                 .mediaList(List.of())
                 .build();

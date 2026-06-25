@@ -56,9 +56,9 @@ public class CartTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                // Verifies that empty carts map smoothly onto your new UnitPrice shape
-                .andExpect(jsonPath("$.price.basePrice.price").value(0))
-                .andExpect(jsonPath("$.price.discountPercentage").value(0));
+                // Verifies that empty carts map smoothly onto the new Price shape
+                .andExpect(jsonPath("$.price.grossPrice").value(0))
+                .andExpect(jsonPath("$.price.percentageDiscount").value(0));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class CartTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 // Verifies structural composition integrity for authenticated contexts
-                .andExpect(jsonPath("$.price.basePrice.price").value(0))
-                .andExpect(jsonPath("$.price.discountPercentage").value(0));
+                .andExpect(jsonPath("$.price.grossPrice").value(0))
+                .andExpect(jsonPath("$.price.percentageDiscount").value(0));
     }
 }

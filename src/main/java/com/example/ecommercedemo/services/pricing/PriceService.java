@@ -1,17 +1,13 @@
 package com.example.ecommercedemo.services.pricing;
 
-import com.example.ecommercedemo.models.pricing.BasePrice;
-import com.example.ecommercedemo.models.pricing.LinePrice;
 import com.example.ecommercedemo.models.pricing.Price;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenUnitPrice;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Supplier;
@@ -22,83 +18,92 @@ public class PriceService {
     @Value("${spring.frozen_prices_timeout_hours:1}")
     private long timeoutHours;
 
-    // Changed: removed static final so it can be safely computed dynamically at runtime
     private Duration snapshotLifetime;
 
-    /**
-     * Executes automatically after Spring completes property injection tasks.
-     */
     @PostConstruct
     public void init() {
         this.snapshotLifetime = Duration.ofHours(timeoutHours);
     }
 
-    // Core expiration helper utility
-    private boolean isExpired(FrozenPrice frozenPrice) {
-        if (frozenPrice == null || frozenPrice.getSnapshotTime() == null) {
+    // ── Staleness ────────────────────────────────────────────────────
+
+    private boolean isExpired(PriceSnapshot snapshot) {
+        if (snapshot == null || snapshot.getTimestamp() == null) {
             return true;
         }
-        return Instant.now().isAfter(frozenPrice.getSnapshotTime().plus(snapshotLifetime));
+        return Instant.now().isAfter(snapshot.getTimestamp().plus(snapshotLifetime));
     }
 
-    public boolean isSnapshotStale(FrozenPrice snapshot) {
+    public boolean isSnapshotStale(PriceSnapshot snapshot) {
         return snapshot == null || isExpired(snapshot);
     }
 
-    public boolean isSnapshotStale(FrozenUnitPrice snapshot) {
-        return snapshot == null || snapshot.getFrozenPrice() == null || isExpired(snapshot.getFrozenPrice());
-    }
+    // ── Snapshot refresh ─────────────────────────────────────────────
 
-    public boolean isSnapshotStale(FrozenLinePrice snapshot) {
-        return snapshot == null
-                || snapshot.getFrozenUnitPrice() == null
-                || snapshot.getFrozenUnitPrice().getFrozenPrice() == null
-                || isExpired(snapshot.getFrozenUnitPrice().getFrozenPrice());
-    }
-
-    public FrozenPrice refreshSnapshot(FrozenPrice frozenPrice, Supplier<BasePrice> currentLiveSupplier) {
-        if (isSnapshotStale(frozenPrice)) {
-            BasePrice current = currentLiveSupplier.get();
-        }
-        return frozenPrice;
-    }
-
-    public FrozenUnitPrice refreshSnapshot(FrozenUnitPrice snapshot, Supplier<UnitPrice> currentLiveSupplier) {
+    /**
+     * If the snapshot is stale (null or expired), fetches a fresh Price from the
+     * supplier and builds a new PriceSnapshot from it.
+     */
+    public PriceSnapshot refreshSnapshot(PriceSnapshot snapshot, Supplier<Price> currentLiveSupplier) {
         if (isSnapshotStale(snapshot)) {
-            UnitPrice current = currentLiveSupplier.get(); // Lazy execution happens here
-            return FrozenUnitPrice.builder()
-                    .frozenPrice(FrozenPrice.freeze(current))
-                    .discountPercentage(current.getDiscountPercentage())
-                    .build();
+            Price current = currentLiveSupplier.get(); // lazy — only called if stale
+            return snapshotFrom(current);
         }
         return snapshot;
     }
 
-    public FrozenLinePrice refreshSnapshot(FrozenLinePrice snapshot, Supplier<LinePrice> currentLiveSupplier) {
-        if (isSnapshotStale(snapshot)) {
-            LinePrice current = currentLiveSupplier.get(); // Lazy execution happens here
-            return FrozenLinePrice.builder()
-                    .quantity(current.getQuantity())
-                    .frozenUnitPrice(FrozenUnitPrice.builder()
-                            .frozenPrice(FrozenPrice.freeze(current.getUnitPrice()))
-                            .discountPercentage(current.getUnitPrice().getDiscountPercentage())
-                            .build())
-                    .build();
-        }
-        return snapshot;
+    /** Build a PriceSnapshot from a live Price, freezing the computed grossAmount. */
+    public PriceSnapshot snapshotFrom(Price live) {
+        live.setGrossAmount(computeGrossAmount(live));
+        return PriceSnapshot.builder()
+                .grossPrice(live.getGrossPrice())
+                .grossAmount(live.getGrossAmount())
+                .grossDiscount(live.getGrossDiscount())
+                .percentageDiscount(live.getPercentageDiscount())
+                .quantity(live.getQuantity())
+                .timestamp(Instant.now())
+                .build();
     }
 
-    public Price calculateGrossAmount(Price price) {
-        if (price == null) return null;
+    // ── Gross amount ─────────────────────────────────────────────────
 
-        BigDecimal grossPrice = price.getGrossPrice() != null ? price.getGrossPrice() : BigDecimal.ZERO;
+    /** Compute grossAmount = grossPrice × quantity */
+    public static BigDecimal computeGrossAmount(Price price) {
+        if (price == null) return BigDecimal.ZERO;
+        BigDecimal gp = price.getGrossPrice() != null ? price.getGrossPrice() : BigDecimal.ZERO;
         BigDecimal qty = price.getQuantity() != null ? price.getQuantity() : BigDecimal.ZERO;
-
-        // grossAmount = grossPrice * quantity  (base line total before discounts)
-        BigDecimal grossAmount = grossPrice.multiply(qty);
-        price.setGrossAmount(grossAmount);
-
-        return price;
+        return gp.multiply(qty);
     }
 
+    // ── Effective prices ─────────────────────────────────────────────
+
+    /**
+     * Net unit price after percentage discount:
+     * grossPrice × (100 − percentageDiscount) / 100
+     */
+    public static BigDecimal effectiveUnitPrice(Price price) {
+        if (price == null) return BigDecimal.ZERO;
+        BigDecimal gp = price.getGrossPrice() != null ? price.getGrossPrice() : BigDecimal.ZERO;
+        BigDecimal pct = price.getPercentageDiscount() != null ? price.getPercentageDiscount() : BigDecimal.ZERO;
+        BigDecimal multiplier = BigDecimal.valueOf(100)
+                .subtract(pct)
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+        return gp.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Net line total after all discounts:
+     * (grossAmount − grossDiscount) × (100 − percentageDiscount) / 100
+     */
+    public static BigDecimal effectivePrice(Price price) {
+        if (price == null) return BigDecimal.ZERO;
+        BigDecimal gross = computeGrossAmount(price);
+        BigDecimal discount = price.getGrossDiscount() != null ? price.getGrossDiscount() : BigDecimal.ZERO;
+        BigDecimal pct = price.getPercentageDiscount() != null ? price.getPercentageDiscount() : BigDecimal.ZERO;
+        BigDecimal afterFlat = gross.subtract(discount);
+        BigDecimal multiplier = BigDecimal.valueOf(100)
+                .subtract(pct)
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+        return afterFlat.multiply(multiplier).setScale(2, RoundingMode.HALF_UP);
+    }
 }

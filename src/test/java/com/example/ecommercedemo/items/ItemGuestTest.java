@@ -65,7 +65,7 @@ public class ItemGuestTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.price.basePrice.price").value(180.0));
+                .andExpect(jsonPath("$.price.grossPrice").value(180.0));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ItemGuestTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.price.basePrice.price").value(90.0));
+                .andExpect(jsonPath("$.price.grossPrice").value(90.0));
     }
 
     @Test
@@ -107,7 +107,7 @@ public class ItemGuestTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.price.basePrice.price").value(0));
+                .andExpect(jsonPath("$.price.grossPrice").value(0));
     }
 
     @Test
@@ -127,6 +127,6 @@ public class ItemGuestTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.price.basePrice.price").value(0));
+                .andExpect(jsonPath("$.price.grossPrice").value(0));
     }
 }

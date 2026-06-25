@@ -1,7 +1,7 @@
 package com.example.ecommercedemo.dtos.carts;
 
 import com.example.ecommercedemo.dtos.carts.items.ItemDTO;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.Price;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,7 @@ public class CartDTO {
 
     private UUID suid;
 
-    private UnitPrice price;
+    private Price price;
 
     private List<ItemDTO> items;
 

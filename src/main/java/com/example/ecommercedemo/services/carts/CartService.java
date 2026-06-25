@@ -7,10 +7,8 @@ import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
-import com.example.ecommercedemo.models.pricing.BasePrice;
-import com.example.ecommercedemo.models.pricing.LinePrice;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.Price;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
@@ -58,16 +56,13 @@ public class CartService {
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         dto.setItems(
-
                 cart.getItems().entrySet().stream()
-                        .map(entry -> {
-                            return itemService.toDTO(entry.getKey(), entry.getValue(), productMap);
-                        })
+                        .map(entry -> itemService.toDTO(entry.getKey(), entry.getValue(), productMap))
                         .toList()
         );
 
-        UnitPrice price = calculatePriceData(cart, productMap);
-        dto.setPrice(price);
+        Price total = calculateCartTotal(cart, productMap);
+        dto.setPrice(total);
 
         return dto;
     }
@@ -93,8 +88,7 @@ public class CartService {
         return getCartDTO(savedCart);
     }
 
-//  Internal shi code
-
+    // --- Internal cart resolution ---
     public Cart getCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .map(user -> getUserCart(user, suid))
@@ -133,7 +127,6 @@ public class CartService {
         if (suid == null) {
             return createGuestCart();
         }
-
         return cartRepo.findBySuid(suid)
                 .orElseGet(this::createGuestCart);
     }
@@ -149,31 +142,32 @@ public class CartService {
         return cartRepo.save(cart);
     }
 
-    // Just calculation of price for the cart
-    private UnitPrice calculatePriceData(Cart cart, Map<Long, Product> productMap) {
+    // --- Cart total calculation ---
+
+    private Price calculateCartTotal(Cart cart, Map<Long, Product> productMap) {
         BigDecimal cartTotal = BigDecimal.ZERO;
 
-        for (Map.Entry<Long, FrozenLinePrice> entry : cart.getItems().entrySet()) {
+        for (Map.Entry<Long, PriceSnapshot> entry : cart.getItems().entrySet()) {
             Long productId = entry.getKey();
-            Product product = productMap.get(productId); // guaranteed to exist
+            Product product = productMap.get(productId);
 
-            FrozenLinePrice frozenLinePrice = entry.getValue();
-            var currentQty = (frozenLinePrice != null) ? frozenLinePrice.getQuantity() : 1;
+            PriceSnapshot snapshot = entry.getValue();
+            int currentQty = (snapshot != null) ? snapshot.getQuantity().intValue() : 1;
 
-            frozenLinePrice = priceService.refreshSnapshot(frozenLinePrice, () ->
-                    LinePrice.builder()
-                            .quantity(currentQty)
-                            .unitPrice(product.getUnitPrice())
+            snapshot = priceService.refreshSnapshot(snapshot, () ->
+                    product.getPrice().toBuilder()
+                            .quantity(BigDecimal.valueOf(currentQty))
                             .build()
             );
 
-            entry.setValue(frozenLinePrice);
-            cartTotal = cartTotal.add(frozenLinePrice.effectivePrice());
+            entry.setValue(snapshot);
+            cartTotal = cartTotal.add(priceService.effectivePrice(snapshot));
         }
 
-        return UnitPrice.builder()
-                .basePrice(BasePrice.builder().price(cartTotal).build())
-                .discountPercentage(BigDecimal.ZERO)
+        return Price.builder()
+                .grossPrice(cartTotal)
+                .percentageDiscount(BigDecimal.ZERO)
+                .quantity(BigDecimal.ONE)
                 .build();
     }
 }

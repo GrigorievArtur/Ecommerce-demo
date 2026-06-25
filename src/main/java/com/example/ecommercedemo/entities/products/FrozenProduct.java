@@ -1,6 +1,6 @@
 package com.example.ecommercedemo.entities.products;
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
+import com.example.ecommercedemo.models.pricing.Price;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import com.example.ecommercedemo.enums.products.Category;
@@ -36,7 +36,7 @@ public class FrozenProduct {
     private String description;
 
     @Embedded
-    private UnitPrice unitPrice;
+    private Price price;
 
     @NotNull
     @Enumerated(EnumType.STRING)

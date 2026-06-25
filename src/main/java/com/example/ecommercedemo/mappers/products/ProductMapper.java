@@ -12,6 +12,10 @@ public interface ProductMapper {
     ProductDTO toDTO(Product product);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "price.grossPrice", source = "basePrice")
+    @Mapping(target = "price.percentageDiscount", source = "discountPercentage")
+    @Mapping(target = "price.grossAmount", ignore = true)
+    @Mapping(target = "price.quantity", constant = "1")
     Product toEntity(CreateProductDTO productDTO);
 
     @Mapping(target = "id", ignore = true)

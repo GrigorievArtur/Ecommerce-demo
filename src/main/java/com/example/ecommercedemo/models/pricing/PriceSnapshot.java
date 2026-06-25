@@ -1,19 +1,21 @@
 package com.example.ecommercedemo.models.pricing;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
-@Getter
-@Setter
-@SuperBuilder
+@Data
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class PriceSnapshot extends Price {
 
-    // used for time validation
-    private Instant timestamp;
+    /** Used for staleness validation */
+    @Builder.Default
+    private Instant timestamp = Instant.now();
 
 }

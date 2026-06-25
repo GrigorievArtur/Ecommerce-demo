@@ -2,7 +2,7 @@ package com.example.ecommercedemo.entities.orders;
 
 import com.example.ecommercedemo.entities.products.FrozenProduct;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.models.shipping.ShippingModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,7 +40,7 @@ public class OrderSnapshot {
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private Map<Long, FrozenLinePrice> items = new HashMap<>();
+    private Map<Long, PriceSnapshot> items = new HashMap<>();
 
 
 }

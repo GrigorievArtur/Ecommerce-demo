@@ -1,8 +1,8 @@
 package com.example.ecommercedemo.entities.carts;
 
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.Price;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -35,16 +35,10 @@ public class Cart {
     @Embedded
     @Builder.Default
     @AttributeOverrides({
-            @AttributeOverride(name = "basePrice.price", column = @Column(name = "cart_base_price")),
-            @AttributeOverride(name = "discountPercentage", column = @Column(name = "cart_discount_percentage"))
+            @AttributeOverride(name = "grossPrice", column = @Column(name = "cart_gross_price")),
+            @AttributeOverride(name = "percentageDiscount", column = @Column(name = "cart_discount_percentage"))
     })
-    private UnitPrice price = new UnitPrice();
-
-    // grossPrice // base price
-    // grossAmount // base price * qty inclus discountable
-    // grossDiscount
-    // percentageDiscount
-    // qty
+    private Price price = new Price();
 
     private Instant expiryDate;
     private Instant lastAccessDate;
@@ -53,7 +47,7 @@ public class Cart {
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private Map<Long, FrozenLinePrice> items = new HashMap<>();
+    private Map<Long, PriceSnapshot> items = new HashMap<>();
 
     @PrePersist
     public void onCreate() {

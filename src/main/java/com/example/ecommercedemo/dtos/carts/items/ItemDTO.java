@@ -1,9 +1,7 @@
 package com.example.ecommercedemo.dtos.carts.items;
 
 import com.example.ecommercedemo.dtos.products.ProductDTO;
-import com.example.ecommercedemo.models.pricing.LinePrice;
-import com.example.ecommercedemo.models.pricing.UnitPrice;
-import com.example.ecommercedemo.models.pricing.frozen.FrozenLinePrice;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,5 +16,5 @@ import java.math.BigDecimal;
 public class ItemDTO {
 
     private ProductDTO product;
-    private FrozenLinePrice frozenLinePrice;
+    private PriceSnapshot priceSnapshot;
 }
