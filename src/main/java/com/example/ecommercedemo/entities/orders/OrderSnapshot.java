@@ -1,8 +1,6 @@
 package com.example.ecommercedemo.entities.orders;
 
-import com.example.ecommercedemo.entities.products.FrozenProduct;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.models.shipping.ShippingModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,9 +11,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Entity
@@ -32,15 +28,15 @@ public class OrderSnapshot {
     @JoinColumn(name = "user_id")
     private User user;
 
-    //TODO : Add not null validation.
 
+//  TODO : Add not null validation
     @Embedded
     private ShippingModel shippingModel;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
-    private Map<Long, PriceSnapshot> items = new HashMap<>();
+    private List<OrderItem> items = new ArrayList<>();
 
 
 }
