@@ -45,7 +45,6 @@ public class ItemService {
         if (existing.isEmpty()) {
             PriceSnapshot snapshot = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
             CartItem item = CartItem.builder()
-                    .cart(cart)
                     .productId(productId)
                     .priceSnapshot(snapshot)
                     .build();
@@ -66,7 +65,6 @@ public class ItemService {
 
         if (remaining <= 0) {
             cart.getItems().remove(item);
-            item.setCart(null); // break reference for orphan removal
         } else {
             PriceSnapshot updated = refreshSnapshot(null, remaining, productId);
             item.setPriceSnapshot(updated);
@@ -76,7 +74,6 @@ public class ItemService {
     public void removeItem(Cart cart, Long productId) {
         CartItem item = findByProductId(cart, productId);
         cart.getItems().remove(item);
-        item.setCart(null);
     }
 
     public ItemDTO toDTO(CartItem item, Map<Long, Product> productMap) {
@@ -103,7 +100,7 @@ public class ItemService {
                 .build();
     }
 
-    public CartItem toCartItem(CreateItemDTO dto, Cart cart, Map<Long, Product> productMap) {
+    public CartItem toCartItem(CreateItemDTO dto, Map<Long, Product> productMap) {
         Product product = productMap.get(dto.getProductId());
         if (product == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + dto.getProductId());
@@ -112,7 +109,6 @@ public class ItemService {
                 .quantity(BigDecimal.valueOf(dto.getQuantity()))
                 .build();
         return CartItem.builder()
-                .cart(cart)
                 .productId(dto.getProductId())
                 .priceSnapshot(priceService.snapshotFrom(live))
                 .build();

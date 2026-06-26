@@ -80,7 +80,7 @@ public class CartService {
         Map<Long, Product> productMap = loadProductMap(itemDTOs);
 
         List<CartItem> items = itemDTOs.stream()
-                .map(item -> itemService.toCartItem(item, cart, productMap))
+                .map(item -> itemService.toCartItem(item, productMap))
                 .toList();
 
         cart.setItems(items);

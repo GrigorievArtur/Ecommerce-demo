@@ -4,6 +4,8 @@ import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.models.pricing.Price;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -42,7 +44,8 @@ public class Cart {
     private Instant creationDate;
 
     @Builder.Default
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
     private List<CartItem> items = new ArrayList<>();
 
     @PrePersist
