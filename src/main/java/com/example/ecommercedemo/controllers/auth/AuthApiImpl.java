@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AllArgsConstructor
 @Transactional
-public class AuthController implements AuthAPI {
+public class AuthApiImpl implements AuthAPI {
 
     private final AuthService authService;
 

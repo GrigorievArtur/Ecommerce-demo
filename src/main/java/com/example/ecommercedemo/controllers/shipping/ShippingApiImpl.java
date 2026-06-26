@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Transactional
-public class ShippingPresetsController implements ShippingAPI {
+public class ShippingApiImpl implements ShippingAPI {
 
     @Autowired
     private ShippingPresetService shippingPresetService;

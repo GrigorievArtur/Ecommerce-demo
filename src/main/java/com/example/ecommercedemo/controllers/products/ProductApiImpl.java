@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Transactional
-public class ProductController implements ProductAPI {
+public class ProductApiImpl implements ProductAPI {
 
     private final ProductService productService;
 

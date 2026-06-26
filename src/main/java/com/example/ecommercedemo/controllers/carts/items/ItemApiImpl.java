@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @RestController
 @Transactional
-public class ItemController implements ItemAPI {
+public class ItemApiImpl implements ItemAPI {
 
     @Autowired
     private CartService cartService;

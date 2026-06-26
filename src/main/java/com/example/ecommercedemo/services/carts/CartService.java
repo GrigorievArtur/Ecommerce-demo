@@ -16,7 +16,9 @@ import com.example.ecommercedemo.services.items.ItemService;
 import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -40,154 +42,108 @@ public class CartService {
     private ProductRepo productRepo;
 
     @Autowired
-    private SecurityHelper securityHelper;
-
-    @Autowired
     private PriceService priceService;
 
+    @Autowired
+    private SecurityHelper securityHelper;
+
+    // ── Read ──────────────────────────────────────────────────────
+
     public CartDTO getCartDTO(UUID suid) {
-        Cart cart = getCart(suid);
+        Cart cart = resolveCart(suid);
         return getCartDTO(cart);
     }
 
     public CartDTO getCartDTO(Cart cart) {
-        CartDTO dto = cartMapper.cartToCartDTO(cart);
-
-        Set<Long> productIds = cart.getItems().stream()
-                .map(CartItem::getProductId)
-                .collect(Collectors.toSet());
-        Map<Long, Product> productMap = productRepo.findAllById(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, Function.identity()));
-
-        dto.setItems(
-                cart.getItems().stream()
-                        .map(item -> itemService.toDTO(item, productMap))
-                        .toList()
-        );
-
-        Price total = calculateCartTotal(cart, productMap);
-        dto.setPrice(total);
-
-        return dto;
+        Map<Long, Product> productMap = loadProductMap(cart);
+        return buildCartDTO(cart, productMap);
     }
 
+    // overload: reuses pre-fetched productMap (used by createCart)
     public CartDTO getCartDTO(Cart cart, Map<Long, Product> productMap) {
-        CartDTO dto = cartMapper.cartToCartDTO(cart);
-        dto.setItems(
-                cart.getItems().stream()
-                        .map(item -> itemService.toDTO(item, productMap))
-                        .toList()
-        );
-
-        Price total = calculateCartTotal(cart, productMap);
-        dto.setPrice(total);
-
-        return dto;
+        return buildCartDTO(cart, productMap);
     }
 
+    // ── Create ────────────────────────────────────────────────────
 
+    /** Creates cart + items in one shot. Returns DTO directly to reuse productMap. */
     public CartDTO createCart(CreateCartDTO dto, User user) {
-        Cart cart = Cart.builder()
-                .user(user) // null = guest cart
-                .build();
+        Cart cart = Cart.builder().user(user).build();
 
         List<CreateItemDTO> itemDTOs = Optional.ofNullable(dto.getItems())
                 .orElse(Collections.emptyList());
 
-        Set<Long> productIds = itemDTOs.stream()
-                .map(CreateItemDTO::getProductId)
-                .collect(Collectors.toSet());
+        if (itemDTOs.isEmpty()) {
+            return buildCartDTO(cartRepo.save(cart), Collections.emptyMap());
+        }
 
-        Map<Long, Product> productMap = productRepo.findAllById(productIds)
-                .stream()
-                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        Map<Long, Product> productMap = loadProductMap(itemDTOs);
 
         List<CartItem> items = itemDTOs.stream()
                 .map(item -> itemService.toCartItem(item, cart, productMap))
                 .toList();
 
         cart.setItems(items);
-        return getCartDTO(cartRepo.save(cart), productMap);
+        return buildCartDTO(cartRepo.save(cart), productMap);
     }
 
+    // ── Modify ────────────────────────────────────────────────────
+
     public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
-        var cart = getCart(suid);
+        Cart cart = resolveCart(suid);
         itemService.addItem(cart, request);
-        var savedCart = cartRepo.save(cart);
-        return getCartDTO(savedCart);
+        return getCartDTO(cartRepo.save(cart));
     }
 
     public CartDTO decreaseItemFromCart(Long productId, int quantity, UUID suid) {
-        var cart = getCart(suid);
+        Cart cart = resolveCart(suid);
         itemService.decrementItem(cart, productId, quantity);
-        var savedCart = cartRepo.save(cart);
-        return getCartDTO(savedCart);
+        return getCartDTO(cartRepo.save(cart));
     }
 
     public CartDTO removeItemFromCart(Long productId, UUID suid) {
-        var cart = getCart(suid);
+        Cart cart = resolveCart(suid);
         itemService.removeItem(cart, productId);
-        var savedCart = cartRepo.save(cart);
-        return getCartDTO(savedCart);
+        return getCartDTO(cartRepo.save(cart));
     }
 
-    // --- Internal cart resolution ---
+    // ── Internal ──────────────────────────────────────────────────
 
-    public Cart getCart(UUID suid) {
+    /** Resolve cart: user cart by userId, or guest cart by suid. Throws 404 if neither found. */
+    private Cart resolveCart(UUID suid) {
         return securityHelper.getCurrentUser()
-                .map(user -> getUserCart(user, suid))
-                .orElseGet(() -> getGuestCart(suid));
+                .flatMap(user -> cartRepo.findByUserId(user.getId()))
+                .or(() -> cartRepo.findBySuid(suid))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
     }
 
-    private Cart getUserCart(User user, UUID suid) {
-        Optional<Cart> userCart = cartRepo.findByUserId(user.getId());
-
-        if (suid == null) {
-            return userCart.orElseGet(() -> createUserCart(user));
-        }
-
-        Optional<Cart> guestCart = cartRepo.findBySuid(suid);
-
-        if (guestCart.isEmpty()) {
-            return userCart.orElseGet(() -> createUserCart(user));
-        }
-
-        Cart suidCart = guestCart.get();
-
-        if (suidCart.getUser() != null && suidCart.getUser().getId().equals(user.getId())) {
-            return suidCart;
-        }
-
-        if (userCart.isEmpty()) {
-            suidCart.setUser(user);
-            suidCart.setExpiryDate(null);
-            return cartRepo.save(suidCart);
-        }
-
-        return userCart.get();
+    private Map<Long, Product> loadProductMap(Cart cart) {
+        Set<Long> ids = cart.getItems().stream()
+                .map(CartItem::getProductId)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) return Collections.emptyMap();
+        return productRepo.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 
-    private Cart getGuestCart(UUID suid) {
-        if (suid == null) {
-            return createGuestCart();
-        }
-        return cartRepo.findBySuid(suid)
-                .orElseGet(this::createGuestCart);
+    private Map<Long, Product> loadProductMap(List<CreateItemDTO> itemDTOs) {
+        Set<Long> ids = itemDTOs.stream()
+                .map(CreateItemDTO::getProductId)
+                .collect(Collectors.toSet());
+        return productRepo.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 
-    private Cart createGuestCart() {
-        return cartRepo.save(new Cart());
+    private CartDTO buildCartDTO(Cart cart, Map<Long, Product> productMap) {
+        CartDTO dto = cartMapper.cartToCartDTO(cart);
+        dto.setItems(
+                cart.getItems().stream()
+                        .map(item -> itemService.toDTO(item, productMap))
+                        .toList()
+        );
+        dto.setPrice(calculateCartTotal(cart, productMap));
+        return dto;
     }
-
-    private Cart createUserCart(User user) {
-        Cart cart = new Cart();
-        cart.setUser(user);
-        cart.setExpiryDate(null);
-        return cartRepo.save(cart);
-    }
-
-    // --- Cart total calculation ---
 
     private Price calculateCartTotal(Cart cart, Map<Long, Product> productMap) {
         BigDecimal cartTotal = BigDecimal.ZERO;
@@ -196,17 +152,15 @@ public class CartService {
             Product product = productMap.get(item.getProductId());
             if (product == null) continue;
 
-            int currentQty = item.getPriceSnapshot().getQuantity().intValue();
-
+            int qty = item.getPriceSnapshot().getQuantity().intValue();
             item.setPriceSnapshot(
                     priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
                             product.getPrice().toBuilder()
-                                    .quantity(BigDecimal.valueOf(currentQty))
+                                    .quantity(BigDecimal.valueOf(qty))
                                     .build()
                     )
             );
-
-            cartTotal = cartTotal.add(priceService.effectivePrice(item.getPriceSnapshot()));
+            cartTotal = cartTotal.add(PriceService.effectivePrice(item.getPriceSnapshot()));
         }
 
         return Price.builder()

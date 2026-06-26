@@ -26,7 +26,7 @@ public class CartApiImpl implements CartAPI {
         return ResponseEntity.ok(cartService.getCartDTO(suid));
     }
 
-    //how to make this run even if unthoneticated cause i need user to be null sometimes.
+    //how to make this run even if unauthenticated cause I need user to be null sometimes.
     @Override
     public ResponseEntity<CartDTO> createCart(@RequestBody CreateCartDTO createCartDTO, @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(cartService.createCart(createCartDTO, user));

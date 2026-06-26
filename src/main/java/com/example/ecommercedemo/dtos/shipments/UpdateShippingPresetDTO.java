@@ -20,7 +20,6 @@ public class UpdateShippingPresetDTO {
 
     private String phoneNumber;
 
-
     private String country;
 
     private String state;

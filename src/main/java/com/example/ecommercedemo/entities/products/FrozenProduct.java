@@ -1,11 +1,14 @@
 package com.example.ecommercedemo.entities.products;
+
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;
-import com.example.ecommercedemo.models.pricing.Price;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
 import com.example.ecommercedemo.enums.products.Category;
+import com.example.ecommercedemo.models.pricing.Price;
 import com.example.ecommercedemo.models.products.ProductMedia;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,13 +17,13 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.List;
 
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 public class FrozenProduct {
+
     @Id
     @GeneratedValue
     private Long id;
@@ -55,9 +58,8 @@ public class FrozenProduct {
     @Size(max = 20)
     @ElementCollection
     @CollectionTable(
-            name = "product_media",
-            joinColumns = @JoinColumn(name = "product_id")
+            name = "frozen_product_media",
+            joinColumns = @JoinColumn(name = "frozen_product_id")
     )
     private List<ProductMedia> mediaList;
-
 }

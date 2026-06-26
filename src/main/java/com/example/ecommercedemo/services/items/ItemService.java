@@ -103,11 +103,18 @@ public class ItemService {
                 .build();
     }
 
-    public CartItem toCartItem(CreateItemDTO createItemDTO, Cart cart, Map<Long, Product> productMap) {
+    public CartItem toCartItem(CreateItemDTO dto, Cart cart, Map<Long, Product> productMap) {
+        Product product = productMap.get(dto.getProductId());
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + dto.getProductId());
+        }
+        Price live = product.getPrice().toBuilder()
+                .quantity(BigDecimal.valueOf(dto.getQuantity()))
+                .build();
         return CartItem.builder()
                 .cart(cart)
-                .productId(createItemDTO.getProductId())
-                .priceSnapshot(priceService.snapshotFrom(productMap.get(createItemDTO.getProductId()).getPrice()))
+                .productId(dto.getProductId())
+                .priceSnapshot(priceService.snapshotFrom(live))
                 .build();
     }
 
