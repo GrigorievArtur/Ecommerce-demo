@@ -2,6 +2,7 @@ package com.example.ecommercedemo.services.carts;
 
 import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
+import com.example.ecommercedemo.dtos.carts.CreateCartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.carts.CartItem;
@@ -69,6 +70,45 @@ public class CartService {
         dto.setPrice(total);
 
         return dto;
+    }
+
+    public CartDTO getCartDTO(Cart cart, Map<Long, Product> productMap) {
+        CartDTO dto = cartMapper.cartToCartDTO(cart);
+        dto.setItems(
+                cart.getItems().stream()
+                        .map(item -> itemService.toDTO(item, productMap))
+                        .toList()
+        );
+
+        Price total = calculateCartTotal(cart, productMap);
+        dto.setPrice(total);
+
+        return dto;
+    }
+
+
+    public CartDTO createCart(CreateCartDTO dto, User user) {
+        Cart cart = Cart.builder()
+                .user(user) // null = guest cart
+                .build();
+
+        List<CreateItemDTO> itemDTOs = Optional.ofNullable(dto.getItems())
+                .orElse(Collections.emptyList());
+
+        Set<Long> productIds = itemDTOs.stream()
+                .map(CreateItemDTO::getProductId)
+                .collect(Collectors.toSet());
+
+        Map<Long, Product> productMap = productRepo.findAllById(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        List<CartItem> items = itemDTOs.stream()
+                .map(item -> itemService.toCartItem(item, cart, productMap))
+                .toList();
+
+        cart.setItems(items);
+        return getCartDTO(cartRepo.save(cart), productMap);
     }
 
     public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {

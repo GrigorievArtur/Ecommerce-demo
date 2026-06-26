@@ -22,7 +22,7 @@ public class CartItem {
     @JoinColumn(name = "cart_id")
     private Cart cart;
 
-    /** The product this item references (was the Map key) */
+    /** The product this item references**/
     @Column(nullable = false)
     private Long productId;
 

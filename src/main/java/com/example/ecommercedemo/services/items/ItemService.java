@@ -103,6 +103,14 @@ public class ItemService {
                 .build();
     }
 
+    public CartItem toCartItem(CreateItemDTO createItemDTO, Cart cart, Map<Long, Product> productMap) {
+        return CartItem.builder()
+                .cart(cart)
+                .productId(createItemDTO.getProductId())
+                .priceSnapshot(priceService.snapshotFrom(productMap.get(createItemDTO.getProductId()).getPrice()))
+                .build();
+    }
+
     // --- helpers ---
 
     private CartItem findByProductId(Cart cart, Long productId) {
