@@ -3,12 +3,9 @@ package com.example.ecommercedemo.services.products;
 import com.example.ecommercedemo.dtos.products.CreateProductDTO;
 import com.example.ecommercedemo.dtos.products.ProductDTO;
 import com.example.ecommercedemo.dtos.products.UpdateProductDTO;
-import com.example.ecommercedemo.entities.products.FrozenProduct;
-import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.exceptions.ResourceNotFoundException;
 import com.example.ecommercedemo.filters.products.ProductFilter;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
-import com.example.ecommercedemo.repositories.products.FrozenProductRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.specifications.ProductSpecification;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +23,6 @@ public class ProductService {
 
     private final ProductMapper productMapper;
 
-    private final FrozenProductRepo frozenProductRepo;
 
     public Page<ProductDTO> getAllProducts(ProductFilter filter, Pageable pageable) {
         return productRepo.findAll(ProductSpecification.withFilter(filter), pageable)
@@ -52,10 +48,7 @@ public class ProductService {
         return productMapper.toDTO(productRepo.save(product));
     }
 
-    public FrozenProduct getProductSnapshot(Product product) {
-        var snapshot = productMapper.toFrozenProduct(product);
-        return frozenProductRepo.save(snapshot);
-    }
+
 
 
 }

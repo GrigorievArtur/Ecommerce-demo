@@ -10,6 +10,7 @@ import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
 import com.example.ecommercedemo.models.pricing.Price;
+import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
@@ -59,11 +60,6 @@ public class CartService {
         return buildCartDTO(cart, productMap);
     }
 
-    // overload: reuses pre-fetched productMap (used by createCart)
-    public CartDTO getCartDTO(Cart cart, Map<Long, Product> productMap) {
-        return buildCartDTO(cart, productMap);
-    }
-
     // ── Create ────────────────────────────────────────────────────
 
     /** Creates cart + items in one shot. Returns DTO directly to reuse productMap. */
@@ -80,7 +76,11 @@ public class CartService {
         Map<Long, Product> productMap = loadProductMap(itemDTOs);
 
         List<CartItem> items = itemDTOs.stream()
-                .map(item -> itemService.toCartItem(item, productMap))
+                .map(item -> {
+                    CartItem cartItem = itemService.toCartItem(item, productMap);
+                    cartItem.setCart(cart);
+                    return cartItem;
+                })
                 .toList();
 
         cart.setItems(items);
@@ -91,20 +91,23 @@ public class CartService {
 
     public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
         Cart cart = resolveCart(suid);
-        itemService.addItem(cart, request);
-        return getCartDTO(cartRepo.save(cart));
+        Map<Long, Product> productMap = loadProductMapForAdd(cart, request.getProductId());
+        itemService.addItem(cart, request, productMap);
+        return buildCartDTO(cartRepo.save(cart), productMap);
     }
 
     public CartDTO decreaseItemFromCart(Long productId, int quantity, UUID suid) {
         Cart cart = resolveCart(suid);
-        itemService.decrementItem(cart, productId, quantity);
-        return getCartDTO(cartRepo.save(cart));
+        Map<Long, Product> productMap = loadProductMap(cart);
+        itemService.decrementItem(cart, productId, quantity, productMap);
+        return buildCartDTO(cartRepo.save(cart), productMap);
     }
 
     public CartDTO removeItemFromCart(Long productId, UUID suid) {
         Cart cart = resolveCart(suid);
+        Map<Long, Product> productMap = loadProductMap(cart);
         itemService.removeItem(cart, productId);
-        return getCartDTO(cartRepo.save(cart));
+        return buildCartDTO(cartRepo.save(cart), productMap);
     }
 
     // ── Internal ──────────────────────────────────────────────────
@@ -153,14 +156,12 @@ public class CartService {
             if (product == null) continue;
 
             int qty = item.getPriceSnapshot().getQuantity().intValue();
-            item.setPriceSnapshot(
-                    priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
-                            product.getPrice().toBuilder()
-                                    .quantity(BigDecimal.valueOf(qty))
-                                    .build()
-                    )
+            PriceSnapshot effective = priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
+                    product.getPrice().toBuilder()
+                            .quantity(BigDecimal.valueOf(qty))
+                            .build()
             );
-            cartTotal = cartTotal.add(PriceService.effectivePrice(item.getPriceSnapshot()));
+            cartTotal = cartTotal.add(PriceService.effectivePrice(effective));
         }
 
         return Price.builder()
@@ -168,5 +169,15 @@ public class CartService {
                 .percentageDiscount(BigDecimal.ZERO)
                 .quantity(BigDecimal.ONE)
                 .build();
+    }
+
+    private Map<Long, Product> loadProductMapForAdd(Cart cart, Long newProductId) {
+        Set<Long> ids = cart.getItems().stream()
+                .map(CartItem::getProductId)
+                .collect(Collectors.toCollection(HashSet::new));
+        ids.add(newProductId);
+        if (ids.isEmpty()) return Collections.emptyMap();
+        return productRepo.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 }

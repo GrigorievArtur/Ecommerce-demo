@@ -34,8 +34,12 @@ public class ItemService {
     @Autowired
     private PriceService priceService;
 
-    public void addItem(Cart cart, CreateItemDTO createItemDTO) {
-        Long productId = createItemDTO.getProductId();
+    public void addItem(Cart cart, CreateItemDTO dto, Map<Long, Product> productMap) {
+        Long productId = dto.getProductId();
+        Product product = productMap.get(productId);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + productId);
+        }
         List<CartItem> items = cart.getItems();
 
         Optional<CartItem> existing = items.stream()
@@ -43,31 +47,29 @@ public class ItemService {
                 .findFirst();
 
         if (existing.isEmpty()) {
-            PriceSnapshot snapshot = refreshSnapshot(null, createItemDTO.getQuantity(), productId);
+            PriceSnapshot snapshot = snapshotFromProduct(product, dto.getQuantity());
             CartItem item = CartItem.builder()
+                    .cart(cart)
                     .productId(productId)
                     .priceSnapshot(snapshot)
                     .build();
             items.add(item);
         } else {
             CartItem item = existing.get();
-            int currentQty = item.getPriceSnapshot().getQuantity().intValue();
-            int newQty = currentQty + createItemDTO.getQuantity();
-            PriceSnapshot updated = refreshSnapshot(item.getPriceSnapshot(), newQty, productId);
-            item.setPriceSnapshot(updated);
+            int newQty = item.getPriceSnapshot().getQuantity().intValue() + dto.getQuantity();
+            item.setPriceSnapshot(refreshSnapshotFromProduct(item.getPriceSnapshot(), product, newQty));
         }
     }
 
-    public void decrementItem(Cart cart, Long productId, int quantity) {
+    public void decrementItem(Cart cart, Long productId, int quantity, Map<Long, Product> productMap) {
         CartItem item = findByProductId(cart, productId);
+        Product product = productMap.get(productId);
 
         int remaining = item.getPriceSnapshot().getQuantity().intValue() - quantity;
-
         if (remaining <= 0) {
             cart.getItems().remove(item);
         } else {
-            PriceSnapshot updated = refreshSnapshot(null, remaining, productId);
-            item.setPriceSnapshot(updated);
+            item.setPriceSnapshot(refreshSnapshotFromProduct(null, product, remaining));
         }
     }
 
@@ -86,18 +88,23 @@ public class ItemService {
         PriceSnapshot snapshot = item.getPriceSnapshot();
         int currentQty = snapshot.getQuantity().intValue();
 
-        PriceSnapshot updated = priceService.refreshSnapshot(snapshot, () ->
+        PriceSnapshot effective = priceService.refreshSnapshot(snapshot, () ->
                 product.getPrice().toBuilder()
                         .quantity(BigDecimal.valueOf(currentQty))
                         .build()
         );
 
-        item.setPriceSnapshot(updated);
-
         return ItemDTO.builder()
                 .product(productMapper.toDTO(product))
-                .priceSnapshot(item.getPriceSnapshot())
+                .priceSnapshot(effective)
                 .build();
+    }
+
+    public PriceSnapshot snapshotFromProduct(Product product, int quantity) {
+        Price live = product.getPrice().toBuilder()
+                .quantity(BigDecimal.valueOf(quantity))
+                .build();
+        return priceService.snapshotFrom(live);
     }
 
     public CartItem toCartItem(CreateItemDTO dto, Map<Long, Product> productMap) {
@@ -131,5 +138,13 @@ public class ItemService {
                     .quantity(BigDecimal.valueOf(quantity))
                     .build();
         });
+    }
+
+    private PriceSnapshot refreshSnapshotFromProduct(PriceSnapshot original, Product product, int quantity) {
+        return priceService.refreshSnapshot(original, () ->
+                product.getPrice().toBuilder()
+                        .quantity(BigDecimal.valueOf(quantity))
+                        .build()
+        );
     }
 }

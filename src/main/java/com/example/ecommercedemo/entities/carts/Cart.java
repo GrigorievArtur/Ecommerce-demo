@@ -31,12 +31,9 @@ public class Cart {
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
-    @Embedded
     @Builder.Default
-    @AttributeOverrides({
-            @AttributeOverride(name = "grossPrice", column = @Column(name = "cart_gross_price")),
-            @AttributeOverride(name = "percentageDiscount", column = @Column(name = "cart_discount_percentage"))
-    })
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
     private Price price = new Price();
 
     private Instant expiryDate;
@@ -44,8 +41,7 @@ public class Cart {
     private Instant creationDate;
 
     @Builder.Default
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
     @PrePersist

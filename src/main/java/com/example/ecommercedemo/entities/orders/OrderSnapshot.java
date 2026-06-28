@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.entities.orders;
 
+import com.example.ecommercedemo.entities.shipments.ShippingPreset;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.models.shipping.ShippingModel;
 import jakarta.persistence.*;
@@ -28,10 +29,9 @@ public class OrderSnapshot {
     @JoinColumn(name = "user_id")
     private User user;
 
-
-//  TODO : Add not null validation
-    @Embedded
-    private ShippingModel shippingModel;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private ShippingPreset shippingPreset;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
