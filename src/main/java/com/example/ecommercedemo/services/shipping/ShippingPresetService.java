@@ -24,49 +24,58 @@ public class ShippingPresetService {
     @Autowired
     private ShippingMapper shippingMapper;
 
-    // repetitive blob.
+    // ----------------------------------------------------------
+    // DTO methods (public API)
+    // ----------------------------------------------------------
 
-    public ShippingPresetDTO saveShippingDtoPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
-        return shippingMapper.toDTO(saveShippingPreset(createShippingPresetDTO, user));
+    public ShippingPresetDTO saveShippingPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
+        return shippingMapper.toDTO(saveShippingPresetEntity(createShippingPresetDTO, user));
     }
 
-    public ShippingPreset saveShippingPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
+    public Page<ShippingPresetDTO> getShippingPresetPaged(Pageable pageable, User user) {
+        return getShippingPresetPagedEntities(pageable, user).map(shippingMapper::toDTO);
+    }
+
+    public ShippingPresetDTO getShippingPreset(Long id, User user) {
+        return shippingMapper.toDTO(getShippingPresetEntity(id, user));
+    }
+
+    public ShippingPresetDTO updateShippingPreset(Long id, UpdateShippingPresetDTO dto, User user) {
+        return shippingMapper.toDTO(updateShippingPresetEntity(id, dto, user));
+    }
+
+    // ----------------------------------------------------------
+    // Entity methods (internal / reusable)
+    // ----------------------------------------------------------
+
+    public ShippingPreset saveShippingPresetEntity(CreateShippingPresetDTO createShippingPresetDTO, User user) {
         ShippingPreset preset = shippingMapper.toEntity(createShippingPresetDTO);
         preset.setUser(user);
         return shippingPresetsRepo.save(preset);
     }
 
-
-    public Page<ShippingPresetDTO> getShippingPresetPaged(Pageable pageable, User user) {
-        var page = shippingPresetsRepo.findByUser(user, pageable);
-        return page.map(shippingMapper::toDTO);
+    public Page<ShippingPreset> getShippingPresetPagedEntities(Pageable pageable, User user) {
+        return shippingPresetsRepo.findByUser(user, pageable);
     }
 
-    public ShippingPresetDTO getShippingPreset(Long id, User user) {
-        return shippingMapper.toDTO(
-                shippingPresetsRepo.findByIdAndUser(id, user)
-                        .orElseThrow(() -> new EntityNotFoundException(
-                                "Shipping preset not found or not owned by user"))
-        );
+    public ShippingPreset getDefaultShippingPresetEntity(User user) {
+        return shippingPresetsRepo.findByIsDefaultAndUser(true, user).orElseThrow(EntityNotFoundException::new);
     }
 
-    public ShippingPresetDTO updateShippingPreset(Long id, UpdateShippingPresetDTO dto, User user) {
-        ShippingPreset preset = shippingPresetsRepo.findByIdAndUser(id, user)
+    public ShippingPreset getShippingPresetEntity(Long id, User user) {
+        return shippingPresetsRepo.findByIdAndUser(id, user)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Shipping preset not found or not owned by user"));
+    }
+
+    public ShippingPreset updateShippingPresetEntity(Long id, UpdateShippingPresetDTO dto, User user) {
+        ShippingPreset preset = getShippingPresetEntity(id, user);
         shippingMapper.updatePresetFromDto(dto, preset);
-        return shippingMapper.toDTO(shippingPresetsRepo.save(preset));
+        return shippingPresetsRepo.save(preset);
     }
 
     public void deleteShippingPreset(Long id, User user) {
-        int deletedCount = shippingPresetsRepo.deleteByUserAndId(user, id);
-        if (deletedCount == 0) {
-            throw new EntityNotFoundException("Shipping preset not found or not owned by user");
-        }
+        shippingPresetsRepo.delete(getShippingPresetEntity(id, user));
     }
-
-
-
-
 
 }

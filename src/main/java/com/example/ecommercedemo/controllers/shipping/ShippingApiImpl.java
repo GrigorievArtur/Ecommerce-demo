@@ -22,7 +22,7 @@ public class ShippingApiImpl implements ShippingAPI {
 
     @Override
     public ResponseEntity<ShippingPresetDTO> saveShippingPreset(User user, CreateShippingPresetDTO createShippingPresetDTO) {
-        return ResponseEntity.ok(shippingPresetService.saveShippingDtoPreset(createShippingPresetDTO, user));
+        return ResponseEntity.ok(shippingPresetService.saveShippingPreset(createShippingPresetDTO, user));
     }
 
     @Override

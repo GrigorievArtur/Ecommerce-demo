@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface ShippingPresetsRepo extends JpaRepository<ShippingPreset, Long> {
 
+    Optional<ShippingPreset> findByIsDefaultAndUser(boolean isDefault, User user);
     Page<ShippingPreset> findByUser(User user, Pageable pageable);
     Optional<ShippingPreset> findByIdAndUser(Long id, User user);
     int deleteByUserAndId(User user,Long id);

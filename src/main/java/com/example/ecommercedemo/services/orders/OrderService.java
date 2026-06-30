@@ -5,6 +5,7 @@ import com.example.ecommercedemo.entities.carts.CartItem;
 import com.example.ecommercedemo.entities.orders.OrderItem;
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;
 import com.example.ecommercedemo.entities.products.Product;
+import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.orders.OrderMapper;
 import com.example.ecommercedemo.repositories.orders.OrderRepo;
 import com.example.ecommercedemo.services.carts.CartService;
@@ -29,7 +30,7 @@ public class OrderService {
     @Autowired
     private OrderRepo orderRepo;
 
-    public OrderSnapshot createOrder(Cart cart) {
+    public OrderSnapshot createOrder(Cart cart, User user) {
         OrderSnapshot orderSnapshot = orderMapper.toOrderSnapshot(cart);
         Map<Long, Product> productMap = cartService.loadProductMap(cart);
 
@@ -42,6 +43,7 @@ public class OrderService {
                     .build();
             orderItems.add(orderItem);
         }
+        orderSnapshot.setUser(user);
         orderSnapshot.setItems(orderItems);
 
         return orderRepo.save(orderSnapshot);

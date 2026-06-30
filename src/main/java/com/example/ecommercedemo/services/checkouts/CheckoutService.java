@@ -1,7 +1,6 @@
 package com.example.ecommercedemo.services.checkouts;
 
 import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
-import com.example.ecommercedemo.dtos.shipments.ShippingPresetDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;
 import com.example.ecommercedemo.entities.shipments.ShippingPreset;
@@ -29,16 +28,17 @@ public class CheckoutService {
     private ShippingPresetService shippingPresetService;
 
     public OrderSnapshot checkoutDefault(UUID suid, User user) {
-        Cart cart = cartService.resolveCart(suid);
-        return orderService.createOrder(cart, user);
+        ShippingPreset shippingPreset = shippingPresetService.getDefaultShippingPresetEntity(user);
+        return checkout(suid, user, shippingPreset);
     }
 
     public OrderSnapshot checkoutSaved(UUID suid, User user, Long ShippingPresetId) {
-        ShippingPreset shippingPreset = shippingPresetService.getShippingPreset(ShippingPresetId, user);
+        ShippingPreset shippingPreset = shippingPresetService.getShippingPresetEntity(ShippingPresetId, user);
+        return checkout(suid, user, shippingPreset);
     }
 
     public OrderSnapshot checkoutNew(UUID suid, User user, CreateShippingPresetDTO createShippingPresetDTO) {
-        ShippingPreset shippingPreset = shippingPresetService.saveShippingPreset(createShippingPresetDTO, user);
+        ShippingPreset shippingPreset = shippingPresetService.saveShippingPresetEntity(createShippingPresetDTO, user);
         return checkout(suid, user, shippingPreset);
     }
 
