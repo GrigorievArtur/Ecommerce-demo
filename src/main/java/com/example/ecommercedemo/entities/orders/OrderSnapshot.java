@@ -2,7 +2,6 @@ package com.example.ecommercedemo.entities.orders;
 
 import com.example.ecommercedemo.entities.shipments.ShippingPreset;
 import com.example.ecommercedemo.entities.users.User;
-import com.example.ecommercedemo.models.shipping.ShippingModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,8 +33,7 @@ public class OrderSnapshot {
     private ShippingPreset shippingPreset;
 
     @Builder.Default
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
+    @OneToMany(mappedBy = "orderSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
 

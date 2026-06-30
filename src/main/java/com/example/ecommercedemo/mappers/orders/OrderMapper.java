@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
-
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "items", ignore = true)
     OrderSnapshot toOrderSnapshot(Cart cart);
 }

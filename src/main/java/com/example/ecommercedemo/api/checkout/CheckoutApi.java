@@ -18,14 +18,14 @@ public interface CheckoutApi {
     @PostMapping("/default")
     @Operation(summary = "Checkouts the current user/guest cart with the default shipping address")
     ResponseEntity<OrderDTO> checkoutDefaultShippingPreset(
-            @CookieValue(name = "suid", required = false) UUID suid,
+            @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user
     );
 
     @PostMapping("/saved/{shippingPresetId}")
     @Operation(summary = "Checkouts the current user/guest cart with a saved shipping address preset")
     ResponseEntity<OrderDTO> checkoutSavedShippingPreset(
-            @CookieValue(name = "suid", required = false) UUID suid,
+            @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user,
             @PathVariable Long shippingPresetId
     );
@@ -33,7 +33,7 @@ public interface CheckoutApi {
     @PostMapping("/new")
     @Operation(summary = "Checkouts the current user/guest cart with a new shipping address")
     ResponseEntity<OrderDTO> checkoutNewShippingPreset(
-            @CookieValue(name = "suid", required = false) UUID suid,
+            @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user,
             @RequestBody CreateShippingPresetDTO shippingPresetDTO
     );

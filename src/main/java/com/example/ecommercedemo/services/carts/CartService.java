@@ -113,14 +113,15 @@ public class CartService {
     // ── Internal ──────────────────────────────────────────────────
 
     /** Resolve cart: user cart by userId, or guest cart by suid. Throws 404 if neither found. */
-    private Cart resolveCart(UUID suid) {
+    public Cart resolveCart(UUID suid) {
         return securityHelper.getCurrentUser()
                 .flatMap(user -> cartRepo.findByUserId(user.getId()))
                 .or(() -> cartRepo.findBySuid(suid))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
     }
 
-    private Map<Long, Product> loadProductMap(Cart cart) {
+    // needs to be public
+    public Map<Long, Product> loadProductMap(Cart cart) {
         Set<Long> ids = cart.getItems().stream()
                 .map(CartItem::getProductId)
                 .collect(Collectors.toSet());

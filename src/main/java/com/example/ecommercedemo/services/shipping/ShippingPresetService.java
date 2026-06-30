@@ -24,11 +24,18 @@ public class ShippingPresetService {
     @Autowired
     private ShippingMapper shippingMapper;
 
-    public ShippingPresetDTO saveShippingPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
+    // repetitive blob.
+
+    public ShippingPresetDTO saveShippingDtoPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
+        return shippingMapper.toDTO(saveShippingPreset(createShippingPresetDTO, user));
+    }
+
+    public ShippingPreset saveShippingPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
         ShippingPreset preset = shippingMapper.toEntity(createShippingPresetDTO);
         preset.setUser(user);
-        return shippingMapper.toDTO(shippingPresetsRepo.save(preset));
+        return shippingPresetsRepo.save(preset);
     }
+
 
     public Page<ShippingPresetDTO> getShippingPresetPaged(Pageable pageable, User user) {
         var page = shippingPresetsRepo.findByUser(user, pageable);
