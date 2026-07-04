@@ -57,6 +57,9 @@ public class CartService {
 
     public CartDTO getCartDTO(Cart cart) {
         Map<Long, Product> productMap = loadProductMap(cart);
+        if (itemService.purgeOrphans(cart, productMap)) {
+            cartRepo.save(cart);
+        }
         return buildCartDTO(cart, productMap);
     }
 
@@ -143,6 +146,7 @@ public class CartService {
         dto.setItems(
                 cart.getItems().stream()
                         .map(item -> itemService.toDTO(item, productMap))
+                        .filter(Objects::nonNull)
                         .toList()
         );
         dto.setPrice(calculateCartTotal(cart, productMap));

@@ -48,6 +48,7 @@ public class ShippingPresetService {
     // Entity methods (internal / reusable)
     // ----------------------------------------------------------
 
+    //TODO : sa le mut in repo lol, si sa fac refactorin g la tot codu
     public ShippingPreset saveShippingPresetEntity(CreateShippingPresetDTO createShippingPresetDTO, User user) {
         ShippingPreset preset = shippingMapper.toEntity(createShippingPresetDTO);
         preset.setUser(user);
@@ -77,5 +78,4 @@ public class ShippingPresetService {
     public void deleteShippingPreset(Long id, User user) {
         shippingPresetsRepo.delete(getShippingPresetEntity(id, user));
     }
-
 }

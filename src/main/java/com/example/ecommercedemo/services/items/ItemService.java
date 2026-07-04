@@ -4,6 +4,7 @@ import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.dtos.carts.items.ItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.carts.CartItem;
+import com.example.ecommercedemo.entities.orders.OrderItem;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.models.pricing.Price;
@@ -78,12 +79,11 @@ public class ItemService {
         cart.getItems().remove(item);
     }
 
+    /** Returns null if product deleted — caller should purge null entries. */
     public ItemDTO toDTO(CartItem item, Map<Long, Product> productMap) {
         Long productId = item.getProductId();
         Product product = productMap.get(productId);
-        if (product == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found for id: " + productId);
-        }
+        if (product == null) return null;
 
         PriceSnapshot snapshot = item.getPriceSnapshot();
         int currentQty = snapshot.getQuantity().intValue();
@@ -97,6 +97,13 @@ public class ItemService {
         return ItemDTO.builder()
                 .product(productMapper.toDTO(product))
                 .priceSnapshot(effective)
+                .build();
+    }
+
+    public ItemDTO toDTO(OrderItem item) {
+        return ItemDTO.builder()
+                .product(productMapper.toDTO(item.getProduct()))
+                .priceSnapshot(item.getPriceSnapshot())
                 .build();
     }
 
@@ -121,8 +128,12 @@ public class ItemService {
                 .build();
     }
 
-    // --- helpers ---
+    /** Remove cart items whose products no longer exist in the DB. Returns true if any were purged. */
+    public boolean purgeOrphans(Cart cart, Map<Long, Product> productMap) {
+        return cart.getItems().removeIf(item -> !productMap.containsKey(item.getProductId()));
+    }
 
+    // --- helpers ---
     private CartItem findByProductId(Cart cart, Long productId) {
         return cart.getItems().stream()
                 .filter(i -> i.getProductId().equals(productId))
