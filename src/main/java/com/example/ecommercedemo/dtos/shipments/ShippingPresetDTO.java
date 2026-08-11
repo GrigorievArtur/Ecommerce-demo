@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.dtos.shipments;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ public class ShippingPresetDTO {
     private Long id;
 
     private String presetName;
+    @JsonProperty("isDefault")
     private boolean isDefault;
 
     private String fullName;

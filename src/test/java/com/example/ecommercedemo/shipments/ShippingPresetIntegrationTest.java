@@ -307,7 +307,7 @@ public class ShippingPresetIntegrationTest {
                         .param("id", preset.getId().toString())
                         .header("Authorization", "Bearer " + ownerToken))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
