@@ -55,6 +55,25 @@ public class CartService {
         return getCartDTO(cart);
     }
 
+    /**
+     * Returns the current cart (user cart when authenticated, else guest cart by suid),
+     * creating a fresh empty cart when none exists yet.
+     */
+    public CartDTO getOrCreateCartDTO(UUID suid, User user) {
+        return securityHelper.getCurrentUser()
+                .flatMap(u -> cartRepo.findByUserId(u.getId()))
+                .or(() -> cartRepo.findBySuid(suid))
+                .map(this::getCartDTO)
+                .orElseGet(() -> createCart(new CreateCartDTO(), user));
+    }
+
+    /** Empties the current cart, e.g. after a successful checkout. */
+    public void clearCart(UUID suid) {
+        Cart cart = resolveCart(suid);
+        cart.getItems().clear();
+        cartRepo.save(cart);
+    }
+
     public CartDTO getCartDTO(Cart cart) {
         Map<Long, Product> productMap = loadProductMap(cart);
         if (itemService.purgeOrphans(cart, productMap)) {

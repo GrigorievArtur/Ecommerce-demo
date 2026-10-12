@@ -35,6 +35,10 @@ public class UserService implements UserDetailsService {
         return userRepo.save(user);
     }
 
+    public boolean emailExists(String email) {
+        return userRepo.findByEmail(email).isPresent();
+    }
+
     public void makeAdmin(Long id){
         var user = userRepo.findById(id).orElseThrow();
         user.setRole(Roles.ADMIN);

@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.dtos.products;
 
+import com.example.ecommercedemo.enums.products.Category;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,4 +14,6 @@ public class UpdateProductDTO {
     private BigDecimal discountPercentage;
     private BigDecimal salePrice;
     private List<ProductMediaDTO> mediaList;
+    private Category category;
+    private Integer stock;
 }

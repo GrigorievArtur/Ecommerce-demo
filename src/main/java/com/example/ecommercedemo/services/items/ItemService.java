@@ -48,6 +48,7 @@ public class ItemService {
                 .findFirst();
 
         if (existing.isEmpty()) {
+            assertStock(product, dto.getQuantity());
             PriceSnapshot snapshot = snapshotFromProduct(product, dto.getQuantity());
             CartItem item = CartItem.builder()
                     .cart(cart)
@@ -58,6 +59,7 @@ public class ItemService {
         } else {
             CartItem item = existing.get();
             int newQty = item.getPriceSnapshot().getQuantity().intValue() + dto.getQuantity();
+            assertStock(product, newQty);
             item.setPriceSnapshot(refreshSnapshotFromProduct(item.getPriceSnapshot(), product, newQty));
         }
     }
@@ -119,6 +121,7 @@ public class ItemService {
         if (product == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + dto.getProductId());
         }
+        assertStock(product, dto.getQuantity());
         Price live = product.getPrice().toBuilder()
                 .quantity(BigDecimal.valueOf(dto.getQuantity()))
                 .build();
@@ -134,6 +137,16 @@ public class ItemService {
     }
 
     // --- helpers ---
+
+    /** Throws 409 when more units are requested than are tracked in stock. */
+    private void assertStock(Product product, int requested) {
+        if (product.getStock() != null && requested > product.getStock()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Only " + product.getStock() + " left in stock for " + product.getName());
+        }
+    }
+
     private CartItem findByProductId(Cart cart, Long productId) {
         return cart.getItems().stream()
                 .filter(i -> i.getProductId().equals(productId))

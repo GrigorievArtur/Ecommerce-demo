@@ -35,12 +35,20 @@ public class Product {
     private String description;
 
     @Embedded
-    private Price price;
+    @Builder.Default
+    private Price price = new Price();
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Category category;
+
+    /**
+     * Units available for sale. {@code null} means unlimited / not tracked.
+     */
+    @Min(0)
+    @Column(name = "stock")
+    private Integer stock;
 
     @Valid
     @Size(max = 20)
@@ -50,4 +58,20 @@ public class Product {
             joinColumns = @JoinColumn(name = "product_id")
     )
     private List<ProductMedia> mediaList;
+
+    /** Guards against legacy rows whose embedded price columns are all NULL. */
+    @PostLoad
+    void hydratePrice() {
+        if (price == null) {
+            price = new Price();
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    void ensurePrice() {
+        if (price == null) {
+            price = new Price();
+        }
+    }
 }

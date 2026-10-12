@@ -64,8 +64,20 @@ public class OrderService {
         return OrderDTO.builder()
                 .items(orderSnapshot.getItems().stream().map(itemService::toDTO).collect(Collectors.toList()))
                 .shippingPreset(shippingMapper.toDTO(orderSnapshot.getShippingPreset()))
-                .userId(orderSnapshot.getUser().getId())
+                .userId(orderSnapshot.getUser() != null ? orderSnapshot.getUser().getId() : null)
                 .id(orderSnapshot.getId())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersForUser(User user) {
+        return orderRepo.findByUserIdOrderByIdDesc(user.getId()).stream()
+                .map(this::toOrderDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long count() {
+        return orderRepo.count();
     }
 }

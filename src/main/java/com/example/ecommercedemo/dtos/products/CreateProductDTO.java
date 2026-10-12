@@ -21,4 +21,5 @@ public class CreateProductDTO {
     private BigDecimal salePrice;
     private List<ProductMediaDTO> mediaList;
     private Category category;
+    private Integer stock;
 }
