@@ -5,6 +5,7 @@ import com.example.ecommercedemo.dtos.shipments.UpdateShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +21,7 @@ public interface ShippingAPI {
     @PostMapping
     ResponseEntity<ShippingPresetDTO> saveShippingPreset(
             @AuthenticationPrincipal User user,
-            @RequestBody CreateShippingPresetDTO createShippingPresetDTO);
+            @Valid @RequestBody CreateShippingPresetDTO createShippingPresetDTO);
 
     @Operation(summary = "Updates shipping information")
     @PatchMapping

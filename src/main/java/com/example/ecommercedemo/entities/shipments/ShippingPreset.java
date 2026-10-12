@@ -1,6 +1,8 @@
 package com.example.ecommercedemo.entities.shipments;
 
 import com.example.ecommercedemo.entities.users.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "shipping_presets")
+@JsonIgnoreProperties("user")
 public class ShippingPreset {
 
     @Id
@@ -23,6 +26,8 @@ public class ShippingPreset {
 
     // e.g., "Home", "Work", "Mom's House"
     private String presetName;
+
+    @JsonProperty("default")
     private boolean isDefault;
 
     private String fullName;

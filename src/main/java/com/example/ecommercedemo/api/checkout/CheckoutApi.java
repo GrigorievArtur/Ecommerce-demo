@@ -5,6 +5,7 @@ import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,6 @@ public interface CheckoutApi {
     ResponseEntity<OrderDTO> checkoutNewShippingPreset(
             @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user,
-            @RequestBody CreateShippingPresetDTO shippingPresetDTO
+            @Valid @RequestBody CreateShippingPresetDTO shippingPresetDTO
     );
 }

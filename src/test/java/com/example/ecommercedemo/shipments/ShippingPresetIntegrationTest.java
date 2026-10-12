@@ -86,7 +86,7 @@ public class ShippingPresetIntegrationTest {
                 .andExpect(jsonPath("$.presetName").value(presetName))
                 .andExpect(jsonPath("$.fullName").value(fullName))
                 .andExpect(jsonPath("$.email").value(email))
-                .andExpect(jsonPath("$.isDefault").value(false));
+                .andExpect(jsonPath("$.default").value(false));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class ShippingPresetIntegrationTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.presetName").value("Work"))
-                .andExpect(jsonPath("$.isDefault").value(true));
+                .andExpect(jsonPath("$.default").value(true));
     }
 
     @Test
@@ -307,7 +307,7 @@ public class ShippingPresetIntegrationTest {
                         .param("id", preset.getId().toString())
                         .header("Authorization", "Bearer " + ownerToken))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
