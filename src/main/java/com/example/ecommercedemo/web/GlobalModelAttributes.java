@@ -1,12 +1,12 @@
 package com.example.ecommercedemo.web;
 
 import com.example.ecommercedemo.components.auth.SecurityHelper;
+import com.example.ecommercedemo.components.carts.CartCookie;
 import com.example.ecommercedemo.enums.products.Category;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.services.carts.CartService;
 import com.example.ecommercedemo.services.shipping.ShippingPolicy;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -26,8 +26,6 @@ import java.util.UUID;
 @ControllerAdvice(basePackages = "com.example.ecommercedemo.web")
 @RequiredArgsConstructor
 public class GlobalModelAttributes {
-
-    public static final String CART_COOKIE = "suid";
 
     private final SecurityHelper securityHelper;
     private final CartService cartService;
@@ -50,15 +48,15 @@ public class GlobalModelAttributes {
         return securityHelper.getCurrentUser().map(CurrentUser::from).orElse(null);
     }
 
+    /** Read-only cart badge; rendering a page never creates a cart. */
     @ModelAttribute("cartCount")
-    public long cartCount(@CookieValue(name = CART_COOKIE, required = false) UUID suid) {
-        try {
-            return cartService.getCartDTO(suid).getItems().stream()
-                    .mapToLong(item -> item.getPriceSnapshot().getQuantity().longValue())
-                    .sum();
-        } catch (Exception ignored) {
-            return 0L;
-        }
+    public long cartCount(@CookieValue(name = CartCookie.NAME, required = false) UUID suid) {
+        CartOwner owner = CartOwner.of(securityHelper.getCurrentUser().orElse(null), suid);
+        return cartService.findCart(owner)
+                .map(cart -> cart.getItems().stream()
+                        .mapToLong(item -> item.getPriceSnapshot().getQuantity().longValue())
+                        .sum())
+                .orElse(0L);
     }
 
     @ModelAttribute("categories")
@@ -78,16 +76,6 @@ public class GlobalModelAttributes {
         return uri == null ? "/" : uri;
     }
 
-    @ModelAttribute("freeShippingThreshold")
-    public java.math.BigDecimal freeShippingThreshold() {
-        return shippingPolicy.freeThreshold();
-    }
-
-    @ModelAttribute("shippingFlatRate")
-    public java.math.BigDecimal shippingFlatRate() {
-        return shippingPolicy.flatRate();
-    }
-
     @ModelAttribute("appName")
     public String appName() {
         return appName;
@@ -103,6 +91,16 @@ public class GlobalModelAttributes {
         return currencySymbol;
     }
 
+    @ModelAttribute("freeShippingThreshold")
+    public java.math.BigDecimal freeShippingThreshold() {
+        return shippingPolicy.freeThreshold();
+    }
+
+    @ModelAttribute("shippingFlatRate")
+    public java.math.BigDecimal shippingFlatRate() {
+        return shippingPolicy.flatRate();
+    }
+
     @ModelAttribute("canonicalUrl")
     public String canonicalUrl(HttpServletRequest request) {
         String path = request.getRequestURI();
@@ -112,17 +110,5 @@ public class GlobalModelAttributes {
     @ModelAttribute("year")
     public int year() {
         return Year.now().getValue();
-    }
-
-    /** Convenience for controllers that need to persist the cart cookie. */
-    public static void setCartCookie(HttpServletResponse response, UUID suid) {
-        if (suid == null) {
-            return;
-        }
-        Cookie cookie = new Cookie(CART_COOKIE, suid.toString());
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(60 * 60 * 24 * 30);
-        response.addCookie(cookie);
     }
 }

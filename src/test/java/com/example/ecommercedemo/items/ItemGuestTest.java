@@ -4,6 +4,7 @@ import com.example.ecommercedemo.common.Helpers;
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.services.carts.CartService;
 import com.example.ecommercedemo.services.items.ItemService;
@@ -75,7 +76,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
-        cartService.addItemToCart(createItemDTO, suid);
+        cartService.addItem(new CartOwner.Guest(suid), createItemDTO);
 
         mockMvc.perform(
                         delete("/api/cart/items")
@@ -96,7 +97,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(2).build();
-        cartService.addItemToCart(createItemDTO, suid);
+        cartService.addItem(new CartOwner.Guest(suid), createItemDTO);
 
         mockMvc.perform(
                         delete("/api/cart/items")
@@ -117,7 +118,7 @@ public class ItemGuestTest {
         Product product = helpers.getSavedProduct();
 
         CreateItemDTO createItemDTO = CreateItemDTO.builder().productId(product.getId()).quantity(3).build();
-        cartService.addItemToCart(createItemDTO, suid);
+        cartService.addItem(new CartOwner.Guest(suid), createItemDTO);
 
         mockMvc.perform(
                         delete("/api/cart/items/all")

@@ -1,8 +1,10 @@
 package com.example.ecommercedemo.web;
 
+import com.example.ecommercedemo.components.carts.CartCookie;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.services.carts.CartService;
 import com.example.ecommercedemo.services.shipping.ShippingPolicy;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +24,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Server-rendered cart. Reads never create a cart; only commands do, via
+ * {@link CartService#addItem}.
+ */
 @Controller
 @RequestMapping("/cart")
 @RequiredArgsConstructor
@@ -31,12 +37,11 @@ public class CartWebController {
     private final ShippingPolicy shippingPolicy;
 
     @GetMapping
-    public String view(@CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+    public String view(@CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                        @AuthenticationPrincipal User user,
-                       HttpServletResponse response,
                        Model model) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
+        CartOwner owner = CartOwner.of(user, suid);
+        CartDTO cart = cartService.findCart(owner).orElseGet(CartDTO::empty);
         model.addAttribute("cart", cart);
         addShippingAttributes(model, cart);
         return "cart";
@@ -45,17 +50,17 @@ public class CartWebController {
     @PostMapping("/items")
     public String add(@RequestParam Long productId,
                       @RequestParam(defaultValue = "1") int quantity,
-                      @CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+                      @CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                       @AuthenticationPrincipal User user,
                       HttpServletResponse response,
                       RedirectAttributes redirect) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
+        CartOwner owner = CartOwner.of(user, suid);
         try {
-            cartService.addItemToCart(CreateItemDTO.builder()
+            CartDTO cart = cartService.addItem(owner, CreateItemDTO.builder()
                     .productId(productId)
                     .quantity(Math.max(1, quantity))
-                    .build(), cart.getSuid());
+                    .build());
+            CartCookie.write(response, cart.getSuid());
             redirect.addFlashAttribute("flash", "Added to your cart.");
         } catch (ResponseStatusException ex) {
             redirect.addFlashAttribute("flashError", ex.getReason());
@@ -65,14 +70,14 @@ public class CartWebController {
 
     @PostMapping("/items/{productId}/decrement")
     public String decrement(@PathVariable Long productId,
-                            @CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+                            @CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                             @AuthenticationPrincipal User user,
                             HttpServletResponse response,
                             RedirectAttributes redirect) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
+        CartOwner owner = CartOwner.of(user, suid);
         try {
-            cartService.decreaseItemFromCart(productId, 1, cart.getSuid());
+            CartDTO cart = cartService.decrementItem(owner, productId, 1);
+            CartCookie.write(response, cart.getSuid());
         } catch (ResponseStatusException ex) {
             redirect.addFlashAttribute("flashError", ex.getReason());
         }
@@ -81,26 +86,32 @@ public class CartWebController {
 
     @PostMapping("/items/{productId}/remove")
     public String remove(@PathVariable Long productId,
-                         @CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+                         @CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                          @AuthenticationPrincipal User user,
                          HttpServletResponse response,
                          RedirectAttributes redirect) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
-        cartService.removeItemFromCart(productId, cart.getSuid());
-        redirect.addFlashAttribute("flash", "Item removed from your cart.");
+        CartOwner owner = CartOwner.of(user, suid);
+        try {
+            CartDTO cart = cartService.removeItem(owner, productId);
+            CartCookie.write(response, cart.getSuid());
+            redirect.addFlashAttribute("flash", "Item removed from your cart.");
+        } catch (ResponseStatusException ex) {
+            redirect.addFlashAttribute("flashError", ex.getReason());
+        }
         return "redirect:/cart";
     }
 
     @PostMapping("/clear")
-    public String clear(@CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+    public String clear(@CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                         @AuthenticationPrincipal User user,
-                        HttpServletResponse response,
                         RedirectAttributes redirect) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
-        cartService.clearCart(cart.getSuid());
-        redirect.addFlashAttribute("flash", "Your cart is now empty.");
+        CartOwner owner = CartOwner.of(user, suid);
+        try {
+            cartService.clearCart(owner);
+            redirect.addFlashAttribute("flash", "Your cart is now empty.");
+        } catch (ResponseStatusException ex) {
+            redirect.addFlashAttribute("flashError", ex.getReason());
+        }
         return "redirect:/cart";
     }
 

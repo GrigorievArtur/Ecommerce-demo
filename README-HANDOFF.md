@@ -89,6 +89,12 @@ Create the schema and a user matching `src/main/resources/application.properties
 - Product list, create, edit and delete
 
 ### Platform
+- **Cart ownership**: guest and account carts are separate first-class types (`CartOwner`), so
+  the service never sniffs the security context. A guest cart is keyed by the `suid` cookie and
+  is merged into the account cart on login. The REST contract keeps reads and creation apart:
+  `GET /api/cart` is read-only (404 when the caller has none) and `POST /api/cart` is the only
+  way to create one (409 when it already exists). Mutation endpoints (`/api/cart/items`) only
+  ever touch an existing cart; adding the first item lazily starts a guest cart.
 - **Inventory**: nullable `stock` on `Product` (`null` = untracked/unlimited); enforced in
   the cart and decremented on sale.
 - **Payments**: `PaymentGateway` interface + `MockPaymentGateway`; card data is processed

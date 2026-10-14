@@ -7,6 +7,7 @@ import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.shipments.ShippingPreset;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
 import com.example.ecommercedemo.repositories.orders.OrderRepo;
 import com.example.ecommercedemo.repositories.shipping.ShippingPresetsRepo;
@@ -443,7 +444,7 @@ public class CheckoutIntegrationTest {
                 .productId(product.getId())
                 .quantity(quantity)
                 .build();
-        cartService.addItemToCart(dto, cart.getSuid());
+        cartService.addItem(CartOwner.of(cart.getUser(), cart.getSuid()), dto);
     }
 
     private void createDefaultPreset(User user) {

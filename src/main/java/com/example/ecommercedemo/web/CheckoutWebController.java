@@ -1,9 +1,11 @@
 package com.example.ecommercedemo.web;
 
+import com.example.ecommercedemo.components.carts.CartCookie;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.orders.OrderDTO;
 import com.example.ecommercedemo.dtos.shipments.ShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.payments.PaymentGateway;
 import com.example.ecommercedemo.payments.PaymentRequest;
 import com.example.ecommercedemo.payments.PaymentResult;
@@ -13,7 +15,6 @@ import com.example.ecommercedemo.services.pricing.PriceService;
 import com.example.ecommercedemo.services.shipping.ShippingPolicy;
 import com.example.ecommercedemo.services.shipping.ShippingPresetService;
 import com.example.ecommercedemo.web.forms.CheckoutForm;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,13 +53,11 @@ public class CheckoutWebController {
     private String currency;
 
     @GetMapping
-    public String form(@CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+    public String form(@CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                        @AuthenticationPrincipal User user,
-                       HttpServletResponse response,
                        RedirectAttributes redirect,
                        Model model) {
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
+        CartDTO cart = cartService.findCart(CartOwner.of(user, suid)).orElseGet(CartDTO::empty);
         if (cart.getItems().isEmpty()) {
             redirect.addFlashAttribute("flashError", "Your cart is empty — add something before checking out.");
             return "redirect:/cart";
@@ -73,16 +72,15 @@ public class CheckoutWebController {
     @PostMapping
     public String place(@Valid @ModelAttribute("checkoutForm") CheckoutForm form,
                         BindingResult binding,
-                        @CookieValue(name = GlobalModelAttributes.CART_COOKIE, required = false) UUID suid,
+                        @CookieValue(name = CartCookie.NAME, required = false) UUID suid,
                         @AuthenticationPrincipal User user,
                         @RequestParam(name = "shippingPresetId", required = false) Long shippingPresetId,
                         @RequestParam(name = "savePreset", defaultValue = "false") boolean savePreset,
-                        HttpServletResponse response,
                         Model model,
                         RedirectAttributes redirect) {
 
-        CartDTO cart = cartService.getOrCreateCartDTO(suid, user);
-        GlobalModelAttributes.setCartCookie(response, cart.getSuid());
+        CartOwner owner = CartOwner.of(user, suid);
+        CartDTO cart = cartService.findCart(owner).orElseGet(CartDTO::empty);
 
         if (cart.getItems().isEmpty()) {
             redirect.addFlashAttribute("flashError", "Your cart is empty.");
@@ -121,8 +119,8 @@ public class CheckoutWebController {
         OrderDTO order;
         try {
             order = usingSavedAddress
-                    ? checkoutService.checkoutSaved(cart.getSuid(), user, shippingPresetId)
-                    : checkoutService.checkoutNew(cart.getSuid(), user, form.toShippingPreset(), savePreset && user != null);
+                    ? checkoutService.checkoutSaved(owner, shippingPresetId)
+                    : checkoutService.checkoutNew(owner, form.toShippingPreset(), savePreset && user != null);
         } catch (ResponseStatusException stockProblem) {
             redirect.addFlashAttribute("flashError", stockProblem.getReason());
             return "redirect:/cart";

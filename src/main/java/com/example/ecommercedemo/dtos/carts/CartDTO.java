@@ -22,5 +22,11 @@ public class CartDTO {
 
     private List<ItemDTO> items;
 
-
+    /** Transient view used by "your cart is empty" pages — never persisted. */
+    public static CartDTO empty() {
+        return CartDTO.builder()
+                .price(new Price())
+                .items(List.of())
+                .build();
+    }
 }

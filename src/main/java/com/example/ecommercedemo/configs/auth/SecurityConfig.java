@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.configs.auth;
 
+import com.example.ecommercedemo.components.carts.CartCookie;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.filters.auth.JwtFilter;
 import com.example.ecommercedemo.services.carts.CartService;
@@ -21,13 +22,11 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 
 import java.io.IOException;
-import java.util.UUID;
 
 /**
  * Two filter chains:
@@ -105,7 +104,7 @@ public class SecurityConfig {
                                                         Authentication authentication)
                             throws IOException, ServletException {
                         if (authentication.getPrincipal() instanceof User user) {
-                            cartService.mergeGuestCartIntoUserCart(readCartCookie(request), user);
+                            cartService.mergeGuestCartIntoAccount(CartCookie.read(request), user);
                         }
                         super.onAuthenticationSuccess(request, response, authentication);
                     }
@@ -124,22 +123,6 @@ public class SecurityConfig {
                 };
         handler.setDefaultTargetUrl("/account");
         return handler;
-    }
-
-    private static UUID readCartCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            return null;
-        }
-        for (Cookie cookie : request.getCookies()) {
-            if ("suid".equals(cookie.getName())) {
-                try {
-                    return UUID.fromString(cookie.getValue());
-                } catch (IllegalArgumentException malformed) {
-                    return null;
-                }
-            }
-        }
-        return null;
     }
 
     @Bean

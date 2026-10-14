@@ -1,6 +1,5 @@
 package com.example.ecommercedemo.services.carts;
 
-import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.dtos.carts.CartDTO;
 import com.example.ecommercedemo.dtos.carts.CreateCartDTO;
 import com.example.ecommercedemo.dtos.carts.items.CreateItemDTO;
@@ -9,6 +8,7 @@ import com.example.ecommercedemo.entities.carts.CartItem;
 import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.mappers.carts.CartMapper;
+import com.example.ecommercedemo.models.carts.CartOwner;
 import com.example.ecommercedemo.models.pricing.Price;
 import com.example.ecommercedemo.models.pricing.PriceSnapshot;
 import com.example.ecommercedemo.repositories.carts.CartRepo;
@@ -16,60 +16,134 @@ import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.items.ItemService;
 import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Owns the cart lifecycle.
+ *
+ * <p>Every method takes a {@link CartOwner}, so guest and account carts follow the same
+ * code path but are never conflated. Reading ({@link #findCart}) is side-effect free and
+ * never creates a cart; creation is explicit via {@link #createCart}; item mutations are
+ * commands and may start a cart on first use.</p>
+ */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CartService {
 
-    @Autowired
-    private CartRepo cartRepo;
-
-    @Autowired
-    private CartMapper cartMapper;
-
-    @Autowired
-    private ItemService itemService;
-
-    @Autowired
-    private ProductRepo productRepo;
-
-    @Autowired
-    private PriceService priceService;
-
-    @Autowired
-    private SecurityHelper securityHelper;
+    private final CartRepo cartRepo;
+    private final CartMapper cartMapper;
+    private final ItemService itemService;
+    private final ProductRepo productRepo;
+    private final PriceService priceService;
 
     // ── Read ──────────────────────────────────────────────────────
 
-    public CartDTO getCartDTO(UUID suid) {
-        Cart cart = resolveCart(suid);
-        return getCartDTO(cart);
+    /**
+     * Read-only lookup. Never creates a cart and never writes to the database, so it is
+     * safe to call from a GET, from an error page or from layout rendering.
+     */
+    public Optional<CartDTO> findCart(CartOwner owner) {
+        return findCartEntity(owner).map(this::toCartDTO);
     }
+
+    public Optional<Cart> findCartEntity(CartOwner owner) {
+        if (owner instanceof CartOwner.Guest guest) {
+            return guest.suid() == null
+                    ? Optional.empty()
+                    : cartRepo.findBySuid(guest.suid());
+        }
+        if (owner instanceof CartOwner.Account account) {
+            return cartRepo.findByUserId(account.user().getId());
+        }
+        throw new IllegalArgumentException("Unknown cart owner: " + owner);
+    }
+
+    /** Like {@link #findCartEntity} but fails with 404 instead of returning empty. */
+    public Cart requireCartEntity(CartOwner owner) {
+        return findCartEntity(owner)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
+    }
+
+    // ── Create ────────────────────────────────────────────────────
 
     /**
-     * Returns the current cart (user cart when authenticated, else guest cart by suid),
-     * creating a fresh empty cart when none exists yet.
+     * Explicitly creates a cart, optionally with initial items. The caller decides what to
+     * do when a cart already exists (the REST endpoint answers 409).
      */
-    public CartDTO getOrCreateCartDTO(UUID suid, User user) {
-        return securityHelper.getCurrentUser()
-                .flatMap(u -> cartRepo.findByUserId(u.getId()))
-                .or(() -> cartRepo.findBySuid(suid))
-                .map(this::getCartDTO)
-                .orElseGet(() -> createCart(new CreateCartDTO(), user));
+    public CartDTO createCart(CartOwner owner, CreateCartDTO dto) {
+        Cart cart = createCartEntity(owner);
+
+        List<CreateItemDTO> itemDTOs = Optional.ofNullable(dto.getItems())
+                .orElse(Collections.emptyList());
+        if (itemDTOs.isEmpty()) {
+            return toCartDTO(cart);
+        }
+
+        Map<Long, Product> productMap = loadProductMap(itemDTOs);
+        List<CartItem> items = new ArrayList<>();
+        for (CreateItemDTO item : itemDTOs) {
+            CartItem cartItem = itemService.toCartItem(item, productMap);
+            cartItem.setCart(cart);
+            items.add(cartItem);
+        }
+        cart.setItems(items);
+        return buildCartDTO(cartRepo.save(cart), productMap);
     }
 
-    /** Empties the current cart, e.g. after a successful checkout. */
-    public void clearCart(UUID suid) {
-        emptyCart(resolveCart(suid));
+    private Cart createCartEntity(CartOwner owner) {
+        Cart cart = owner instanceof CartOwner.Account account
+                ? Cart.builder().user(account.user()).build()
+                : Cart.builder().build();
+        return cartRepo.save(cart);
+    }
+
+    // ── Modify ────────────────────────────────────────────────────
+
+    /**
+     * Adds an item to the owner's cart, starting one on first use. This is a command, so
+     * the implicit creation is intentional — a read never does this.
+     */
+    public CartDTO addItem(CartOwner owner, CreateItemDTO request) {
+        Cart cart = findCartEntity(owner).orElseGet(() -> createCartEntity(owner));
+        Map<Long, Product> productMap = loadProductMapForAdd(cart, request.getProductId());
+        itemService.addItem(cart, request, productMap);
+        return buildCartDTO(cartRepo.save(cart), productMap);
+    }
+
+    public CartDTO decrementItem(CartOwner owner, Long productId, int quantity) {
+        Cart cart = requireCartEntity(owner);
+        Map<Long, Product> productMap = loadProductMap(cart);
+        itemService.decrementItem(cart, productId, quantity, productMap);
+        return buildCartDTO(cartRepo.save(cart), productMap);
+    }
+
+    public CartDTO removeItem(CartOwner owner, Long productId) {
+        Cart cart = requireCartEntity(owner);
+        Map<Long, Product> productMap = loadProductMap(cart);
+        itemService.removeItem(cart, productId);
+        return buildCartDTO(cartRepo.save(cart), productMap);
+    }
+
+    /** Empties the cart, e.g. after a successful checkout. Requires an existing cart. */
+    public void clearCart(CartOwner owner) {
+        emptyCart(requireCartEntity(owner));
     }
 
     public void emptyCart(Cart cart) {
@@ -97,11 +171,13 @@ public class CartService {
         }
     }
 
+    // ── Guest → account merge ─────────────────────────────────────
+
     /**
      * Merges the guest cart identified by the {@code suid} cookie into the signed-in user's
      * cart. Safe to call on every login: it is a no-op when no guest cart exists.
      */
-    public void mergeGuestCartIntoUserCart(UUID suid, User user) {
+    public void mergeGuestCartIntoAccount(UUID suid, User user) {
         if (suid == null || user == null) {
             return;
         }
@@ -109,13 +185,13 @@ public class CartService {
         if (guestCart == null || guestCart.getUser() != null) {
             return;
         }
-        Cart userCart = cartRepo.findByUserId(user.getId()).orElse(null);
-        if (userCart == null) {
+        Cart accountCart = cartRepo.findByUserId(user.getId()).orElse(null);
+        if (accountCart == null) {
             guestCart.setUser(user);
             cartRepo.save(guestCart);
             return;
         }
-        if (Objects.equals(userCart.getId(), guestCart.getId())) {
+        if (Objects.equals(accountCart.getId(), guestCart.getId())) {
             return;
         }
         if (guestCart.getItems().isEmpty()) {
@@ -124,7 +200,7 @@ public class CartService {
         }
 
         Set<Long> productIds = new HashSet<>();
-        userCart.getItems().forEach(item -> productIds.add(item.getProductId()));
+        accountCart.getItems().forEach(item -> productIds.add(item.getProductId()));
         guestCart.getItems().forEach(item -> productIds.add(item.getProductId()));
         Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
@@ -132,7 +208,7 @@ public class CartService {
         for (CartItem guestItem : guestCart.getItems()) {
             int quantity = guestItem.getPriceSnapshot().getQuantity().intValue();
             try {
-                itemService.addItem(userCart, CreateItemDTO.builder()
+                itemService.addItem(accountCart, CreateItemDTO.builder()
                         .productId(guestItem.getProductId())
                         .quantity(quantity)
                         .build(), productMap);
@@ -140,10 +216,18 @@ public class CartService {
                 // Keep whatever fits; never block a successful sign-in on a stock limit.
             }
         }
-        cartRepo.save(userCart);
+        cartRepo.save(accountCart);
         cartRepo.delete(guestCart);
     }
 
+    // ── Internal ──────────────────────────────────────────────────
+
+    /** Read-only DTO projection — does not purge or persist anything. */
+    private CartDTO toCartDTO(Cart cart) {
+        return buildCartDTO(cart, loadProductMap(cart));
+    }
+
+    /** DTO projection used by mutating flows; drops items whose product was deleted. */
     public CartDTO getCartDTO(Cart cart) {
         Map<Long, Product> productMap = loadProductMap(cart);
         if (itemService.purgeOrphans(cart, productMap)) {
@@ -152,72 +236,14 @@ public class CartService {
         return buildCartDTO(cart, productMap);
     }
 
-    // ── Create ────────────────────────────────────────────────────
-
-    /** Creates cart + items in one shot. Returns DTO directly to reuse productMap. */
-    public CartDTO createCart(CreateCartDTO dto, User user) {
-        Cart cart = Cart.builder().user(user).build();
-
-        List<CreateItemDTO> itemDTOs = Optional.ofNullable(dto.getItems())
-                .orElse(Collections.emptyList());
-
-        if (itemDTOs.isEmpty()) {
-            return buildCartDTO(cartRepo.save(cart), Collections.emptyMap());
-        }
-
-        Map<Long, Product> productMap = loadProductMap(itemDTOs);
-
-        List<CartItem> items = itemDTOs.stream()
-                .map(item -> {
-                    CartItem cartItem = itemService.toCartItem(item, productMap);
-                    cartItem.setCart(cart);
-                    return cartItem;
-                })
-                .toList();
-
-        cart.setItems(items);
-        return buildCartDTO(cartRepo.save(cart), productMap);
-    }
-
-    // ── Modify ────────────────────────────────────────────────────
-
-    public CartDTO addItemToCart(CreateItemDTO request, UUID suid) {
-        Cart cart = resolveCart(suid);
-        Map<Long, Product> productMap = loadProductMapForAdd(cart, request.getProductId());
-        itemService.addItem(cart, request, productMap);
-        return buildCartDTO(cartRepo.save(cart), productMap);
-    }
-
-    public CartDTO decreaseItemFromCart(Long productId, int quantity, UUID suid) {
-        Cart cart = resolveCart(suid);
-        Map<Long, Product> productMap = loadProductMap(cart);
-        itemService.decrementItem(cart, productId, quantity, productMap);
-        return buildCartDTO(cartRepo.save(cart), productMap);
-    }
-
-    public CartDTO removeItemFromCart(Long productId, UUID suid) {
-        Cart cart = resolveCart(suid);
-        Map<Long, Product> productMap = loadProductMap(cart);
-        itemService.removeItem(cart, productId);
-        return buildCartDTO(cartRepo.save(cart), productMap);
-    }
-
-    // ── Internal ──────────────────────────────────────────────────
-
-    /** Resolve cart: user cart by userId, or guest cart by suid. Throws 404 if neither found. */
-    public Cart resolveCart(UUID suid) {
-        return securityHelper.getCurrentUser()
-                .flatMap(user -> cartRepo.findByUserId(user.getId()))
-                .or(() -> cartRepo.findBySuid(suid))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
-    }
-
-    // needs to be public
+    // needs to be public (used by OrderService)
     public Map<Long, Product> loadProductMap(Cart cart) {
         Set<Long> ids = cart.getItems().stream()
                 .map(CartItem::getProductId)
                 .collect(Collectors.toSet());
-        if (ids.isEmpty()) return Collections.emptyMap();
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
         return productRepo.findAllById(ids).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
@@ -226,6 +252,15 @@ public class CartService {
         Set<Long> ids = itemDTOs.stream()
                 .map(CreateItemDTO::getProductId)
                 .collect(Collectors.toSet());
+        return productRepo.findAllById(ids).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+    }
+
+    private Map<Long, Product> loadProductMapForAdd(Cart cart, Long newProductId) {
+        Set<Long> ids = cart.getItems().stream()
+                .map(CartItem::getProductId)
+                .collect(Collectors.toCollection(HashSet::new));
+        ids.add(newProductId);
         return productRepo.findAllById(ids).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
@@ -247,12 +282,13 @@ public class CartService {
 
         for (CartItem item : cart.getItems()) {
             Product product = productMap.get(item.getProductId());
-            if (product == null) continue;
-
-            int qty = item.getPriceSnapshot().getQuantity().intValue();
+            if (product == null) {
+                continue;
+            }
+            int quantity = item.getPriceSnapshot().getQuantity().intValue();
             PriceSnapshot effective = priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
                     product.getPrice().toBuilder()
-                            .quantity(BigDecimal.valueOf(qty))
+                            .quantity(BigDecimal.valueOf(quantity))
                             .build()
             );
             cartTotal = cartTotal.add(PriceService.effectivePrice(effective));
@@ -263,15 +299,5 @@ public class CartService {
                 .percentageDiscount(BigDecimal.ZERO)
                 .quantity(BigDecimal.ONE)
                 .build();
-    }
-
-    private Map<Long, Product> loadProductMapForAdd(Cart cart, Long newProductId) {
-        Set<Long> ids = cart.getItems().stream()
-                .map(CartItem::getProductId)
-                .collect(Collectors.toCollection(HashSet::new));
-        ids.add(newProductId);
-        if (ids.isEmpty()) return Collections.emptyMap();
-        return productRepo.findAllById(ids).stream()
-                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 }

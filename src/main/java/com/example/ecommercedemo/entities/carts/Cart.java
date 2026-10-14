@@ -28,7 +28,7 @@ public class Cart {
     private UUID suid = UUID.randomUUID();
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = true)
+    @JoinColumn(name = "user_id", nullable = true, unique = true)
     private User user;
 
     @Builder.Default
