@@ -41,7 +41,8 @@ public class CartWebController {
                        @AuthenticationPrincipal User user,
                        Model model) {
         CartOwner owner = CartOwner.of(user, suid);
-        CartDTO cart = cartService.findCart(owner).orElseGet(CartDTO::empty);
+        // No cart yet: show an empty one instead of creating a cart on a read.
+        CartDTO cart = cartService.findCartDtoOrEmpty(owner).orElseGet(CartDTO::empty);
         model.addAttribute("cart", cart);
         addShippingAttributes(model, cart);
         return "cart";

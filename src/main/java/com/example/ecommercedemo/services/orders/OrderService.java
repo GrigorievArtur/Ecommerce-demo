@@ -43,7 +43,7 @@ public class OrderService {
 
     public OrderSnapshot createOrder(Cart cart, User user) {
         OrderSnapshot orderSnapshot = orderMapper.toOrderSnapshot(cart);
-        Map<Long, Product> productMap = cartService.loadProductMap(cart);
+        Map<Long, Product> productMap = cartService.findProducts(cart);
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cart.getItems()) {

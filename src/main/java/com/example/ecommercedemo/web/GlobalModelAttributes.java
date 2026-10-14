@@ -52,7 +52,7 @@ public class GlobalModelAttributes {
     @ModelAttribute("cartCount")
     public long cartCount(@CookieValue(name = CartCookie.NAME, required = false) UUID suid) {
         CartOwner owner = CartOwner.of(securityHelper.getCurrentUser().orElse(null), suid);
-        return cartService.findCart(owner)
+        return cartService.findCartEntityOrEmpty(owner)
                 .map(cart -> cart.getItems().stream()
                         .mapToLong(item -> item.getPriceSnapshot().getQuantity().longValue())
                         .sum())

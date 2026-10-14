@@ -11,14 +11,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.UUID;
 
 @RestController
-@Transactional
 @RequiredArgsConstructor
 public class CartApiImpl implements CartAPI {
 
@@ -26,15 +24,14 @@ public class CartApiImpl implements CartAPI {
 
     @Override
     public ResponseEntity<CartDTO> getCart(UUID suid, User user) {
-        return cartService.findCart(CartOwner.of(user, suid))
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        // findCartDto throws 404 when the caller has no cart; the status propagates as-is.
+        return ResponseEntity.ok(cartService.findCartDto(CartOwner.of(user, suid)));
     }
 
     @Override
     public ResponseEntity<CartDTO> createCart(UUID suid, User user, CreateCartDTO createCartDTO, HttpServletResponse response) {
         CartOwner owner = CartOwner.of(user, suid);
-        if (cartService.findCart(owner).isPresent()) {
+        if (cartService.findCartEntityOrEmpty(owner).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         CreateCartDTO body = createCartDTO != null ? createCartDTO : new CreateCartDTO();

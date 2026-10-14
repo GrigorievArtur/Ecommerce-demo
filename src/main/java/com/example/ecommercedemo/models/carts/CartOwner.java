@@ -6,10 +6,6 @@ import java.util.UUID;
 
 /**
  * Identifies who a cart belongs to.
- *
- * <p>Guest and signed-in ownership are deliberately different types, so the cart service
- * never has to guess identity from the security context. A guest owns exactly one cart per
- * {@code suid} cookie; an account owns exactly one cart per user.</p>
  */
 public sealed interface CartOwner {
 

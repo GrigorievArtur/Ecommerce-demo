@@ -57,7 +57,7 @@ public class CheckoutWebController {
                        @AuthenticationPrincipal User user,
                        RedirectAttributes redirect,
                        Model model) {
-        CartDTO cart = cartService.findCart(CartOwner.of(user, suid)).orElseGet(CartDTO::empty);
+        CartDTO cart = cartOrEmpty(CartOwner.of(user, suid));
         if (cart.getItems().isEmpty()) {
             redirect.addFlashAttribute("flashError", "Your cart is empty — add something before checking out.");
             return "redirect:/cart";
@@ -80,7 +80,7 @@ public class CheckoutWebController {
                         RedirectAttributes redirect) {
 
         CartOwner owner = CartOwner.of(user, suid);
-        CartDTO cart = cartService.findCart(owner).orElseGet(CartDTO::empty);
+        CartDTO cart = cartOrEmpty(owner);
 
         if (cart.getItems().isEmpty()) {
             redirect.addFlashAttribute("flashError", "Your cart is empty.");
@@ -145,6 +145,11 @@ public class CheckoutWebController {
         model.addAttribute("shippingFee", shippingFee);
         model.addAttribute("grandTotal", subtotal.add(shippingFee));
         return "confirmation";
+    }
+
+    /** Checkout always needs a cart to price; a missing one is treated as an empty cart. */
+    private CartDTO cartOrEmpty(CartOwner owner) {
+        return cartService.findCartDtoOrEmpty(owner).orElseGet(CartDTO::empty);
     }
 
     private void populateCheckoutModel(Model model, CartDTO cart, User user) {

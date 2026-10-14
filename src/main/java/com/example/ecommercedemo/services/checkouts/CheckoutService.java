@@ -61,7 +61,7 @@ public class CheckoutService {
     }
 
     public OrderSnapshot checkout(CartOwner owner, ShippingPreset shippingPreset) {
-        Cart cart = cartService.requireCartEntity(owner);
+        Cart cart = cartService.findCartEntity(owner);
         cartService.assertItemsInStock(cart);
 
         OrderSnapshot order = orderService.createOrder(cart, accountOf(owner));
