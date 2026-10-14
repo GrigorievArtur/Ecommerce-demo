@@ -12,8 +12,10 @@ import com.example.ecommercedemo.specifications.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -55,14 +57,29 @@ public class ProductService {
                 .toList();
     }
 
-    /** Decrements tracked stock after a successful sale. No-op when stock is untracked. */
+    /**
+     * Atomically reduces tracked stock after a sale. No-op when stock is untracked.
+     *
+     * <p>The conditional UPDATE is the concurrency guard: it either removes exactly the
+     * quantity requested or affects zero rows, so a lost race can never oversell.</p>
+     *
+     * @throws ResponseStatusException 409 when the tracked stock is no longer sufficient
+     */
     public void decrementStock(Long productId, int quantity) {
+        if (quantity <= 0) {
+            return;
+        }
+        if (productRepo.decrementStockIfAvailable(productId, quantity) == 1) {
+            return;
+        }
+        // 0 rows means untracked (fine) or the stock ran out under us (409).
         Product product = getProductEntity(productId);
         if (product.getStock() == null) {
             return;
         }
-        product.setStock(Math.max(0, product.getStock() - quantity));
-        productRepo.save(product);
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Only " + product.getStock() + " left in stock for " + product.getName());
     }
 
     public void deleteProductById(Long id) {

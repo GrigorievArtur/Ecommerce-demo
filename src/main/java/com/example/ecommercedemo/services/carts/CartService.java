@@ -78,6 +78,27 @@ public class CartService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
     }
 
+    /**
+     * Like {@link #findCartEntity} but takes a write lock on the cart row for the rest of the
+     * current transaction, so concurrent checkouts of the same cart serialise instead of both
+     * creating an order.
+     *
+     * @throws ResponseStatusException 404 when the owner has no cart
+     */
+    public Cart lockCartEntity(CartOwner owner) {
+        Optional<Cart> locked;
+        if (owner instanceof CartOwner.Guest guest) {
+            locked = guest.suid() == null
+                    ? Optional.empty()
+                    : cartRepo.findBySuidForUpdate(guest.suid());
+        } else if (owner instanceof CartOwner.Account account) {
+            locked = cartRepo.findByUserIdForUpdate(account.user().getId());
+        } else {
+            throw new IllegalArgumentException("Unknown cart owner: " + owner);
+        }
+        return locked.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
+    }
+
     /** Non-throwing lookup: empty when the owner has no cart yet. */
     public Optional<Cart> findCartEntityOrEmpty(CartOwner owner) {
         if (owner instanceof CartOwner.Guest guest) {

@@ -136,7 +136,7 @@ public class CheckoutIntegrationTest {
     }
 
     @Test
-    void checkoutDefaultShippingPreset_emptyCart_succeeds() throws Exception {
+    void checkoutDefaultShippingPreset_emptyCart_isRejected() throws Exception {
         createDefaultPreset(owner);
         // cart has no items
 
@@ -147,10 +147,7 @@ public class CheckoutIntegrationTest {
                                 .cookie(new Cookie("suid", ownerCart.getSuid().toString()))
                 )
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.items", hasSize(0)))
-                .andExpect(jsonPath("$.shippingPreset.presetName").value(presetName));
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -424,6 +421,10 @@ public class CheckoutIntegrationTest {
                 )
                 .andExpect(status().isOk());
 
+        // The first checkout emptied the cart, so it must be refilled before the next order.
+        // Checking out the same (now empty) cart again is rejected, not sold twice.
+        addItemToCart(ownerCart, 1);
+
         mockMvc.perform(
                         post("/api/checkout/saved/" + preset.getId())
                                 .header("Authorization", "Bearer " + ownerToken)
@@ -433,6 +434,31 @@ public class CheckoutIntegrationTest {
                 .andExpect(status().isOk());
 
         assertEquals(orderCountBefore + 2, orderRepo.count());
+    }
+
+    @Test
+    void checkout_sameCartTwice_isRejectedTheSecondTime() throws Exception {
+        addItemToCart(ownerCart, 1);
+        ShippingPreset preset = createSavedPreset(owner);
+        long orderCountBefore = orderRepo.count();
+
+        mockMvc.perform(
+                        post("/api/checkout/saved/" + preset.getId())
+                                .header("Authorization", "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .cookie(new Cookie("suid", ownerCart.getSuid().toString()))
+                )
+                .andExpect(status().isOk());
+
+        mockMvc.perform(
+                        post("/api/checkout/saved/" + preset.getId())
+                                .header("Authorization", "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .cookie(new Cookie("suid", ownerCart.getSuid().toString()))
+                )
+                .andExpect(status().isConflict());
+
+        assertEquals(orderCountBefore + 1, orderRepo.count());
     }
 
     // ====================================================================

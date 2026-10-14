@@ -13,8 +13,12 @@ import com.example.ecommercedemo.services.orders.OrderService;
 import com.example.ecommercedemo.services.products.ProductService;
 import com.example.ecommercedemo.services.shipping.ShippingPresetService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Comparator;
 
 /**
  * Turns a cart into a persisted order.
@@ -61,13 +65,20 @@ public class CheckoutService {
     }
 
     public OrderSnapshot checkout(CartOwner owner, ShippingPreset shippingPreset) {
-        Cart cart = cartService.findCartEntity(owner);
+        // Lock the cart row first: a concurrent checkout of the same cart waits here, then
+        // sees the emptied cart, so the same goods can never be sold twice.
+        Cart cart = cartService.lockCartEntity(owner);
+        if (cart.getItems().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cart is empty");
+        }
         cartService.assertItemsInStock(cart);
 
         OrderSnapshot order = orderService.createOrder(cart, accountOf(owner));
         // The order is a managed entity, so this flush-on-commit persists the JSON address.
         order.setShippingPreset(shippingPreset);
 
+        // Stock is reserved last and atomically; a lost race throws 409 and rolls back the
+        // whole checkout, so the order and the cart stay untouched.
         decrementStock(order);
         cartService.emptyCart(cart);
         return order;
@@ -78,14 +89,19 @@ public class CheckoutService {
         return owner instanceof CartOwner.Account account ? account.user() : null;
     }
 
-    /** Reduces tracked stock for every line, so the same sale can never oversell. */
+    /**
+     * Reduces tracked stock line by line. Each decrement is a conditional UPDATE, so a lost
+     * race throws 409 and rolls the checkout back instead of overselling.
+     *
+     * <p>Lines are processed in product-id order so two multi-line orders take product locks
+     * in the same sequence — otherwise they could deadlock on each other.</p>
+     */
     private void decrementStock(OrderSnapshot order) {
-        for (OrderItem item : order.getItems()) {
-            if (item.getProduct() == null || item.getProduct().getId() == null) {
-                continue;
-            }
-            int quantity = item.getPriceSnapshot().getQuantity().intValue();
-            productService.decrementStock(item.getProduct().getId(), quantity);
-        }
+        order.getItems().stream()
+                .filter(item -> item.getProduct() != null && item.getProduct().getId() != null)
+                .sorted(Comparator.comparing(item -> item.getProduct().getId()))
+                .forEach(item -> productService.decrementStock(
+                        item.getProduct().getId(),
+                        item.getPriceSnapshot().getQuantity().intValue()));
     }
 }
