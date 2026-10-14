@@ -1,6 +1,8 @@
 package com.example.ecommercedemo.configs.auth;
 
+import com.example.ecommercedemo.entities.users.User;
 import com.example.ecommercedemo.filters.auth.JwtFilter;
+import com.example.ecommercedemo.services.carts.CartService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -14,8 +16,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+
+import java.io.IOException;
+import java.util.UUID;
 
 /**
  * Two filter chains:
@@ -51,20 +63,20 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    SecurityFilterChain webFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain webFilterChain(HttpSecurity http, AuthenticationSuccessHandler successHandler) throws Exception {
         var csrfHandler = new CsrfTokenRequestAttributeHandler();
         csrfHandler.setCsrfRequestAttributeName("_csrf");
 
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/account/**", "/checkout/**").authenticated()
+                        .requestMatchers("/account/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/account")
+                        .successHandler(successHandler)
                         .failureUrl("/login?error")
                         .permitAll()
                 )
@@ -76,6 +88,58 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.csrfTokenRequestHandler(csrfHandler));
 
         return http.build();
+    }
+
+    /**
+     * Merges any guest cart into the user's cart, then redirects to the originally-requested
+     * page after login — but never onto /error (which can surface when a stale saved request
+     * points at an error URL).
+     */
+    @Bean
+    AuthenticationSuccessHandler authenticationSuccessHandler(CartService cartService) {
+        SavedRequestAwareAuthenticationSuccessHandler handler =
+                new SavedRequestAwareAuthenticationSuccessHandler() {
+                    @Override
+                    public void onAuthenticationSuccess(HttpServletRequest request,
+                                                        HttpServletResponse response,
+                                                        Authentication authentication)
+                            throws IOException, ServletException {
+                        if (authentication.getPrincipal() instanceof User user) {
+                            cartService.mergeGuestCartIntoUserCart(readCartCookie(request), user);
+                        }
+                        super.onAuthenticationSuccess(request, response, authentication);
+                    }
+
+                    @Override
+                    protected String determineTargetUrl(HttpServletRequest request,
+                                                        HttpServletResponse response,
+                                                        Authentication authentication) {
+                        String cont = request.getParameter("continue");
+                        if (cont != null && cont.startsWith("/") && !cont.startsWith("//") && !cont.startsWith("/error")) {
+                            return cont;
+                        }
+                        String target = super.determineTargetUrl(request, response, authentication);
+                        return (target != null && target.startsWith("/error")) ? "/account" : target;
+                    }
+                };
+        handler.setDefaultTargetUrl("/account");
+        return handler;
+    }
+
+    private static UUID readCartCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        for (Cookie cookie : request.getCookies()) {
+            if ("suid".equals(cookie.getName())) {
+                try {
+                    return UUID.fromString(cookie.getValue());
+                } catch (IllegalArgumentException malformed) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     @Bean

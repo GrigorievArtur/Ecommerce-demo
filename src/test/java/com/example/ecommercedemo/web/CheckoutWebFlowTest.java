@@ -14,6 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import jakarta.servlet.http.Cookie;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -127,7 +129,8 @@ class CheckoutWebFlowTest {
                         .param("cardNumber", "4242424242424242")
                         .param("cardHolder", "Jane Doe")
                         .param("expiry", "12/28")
-                        .param("cvc", "123"))
+                        .param("cvc", "123")
+                        .param("savePreset", "true"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/checkout/confirmation"));
 
@@ -135,8 +138,47 @@ class CheckoutWebFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("confirmed")));
 
+        // Saved address is rendered (exercises the preset.isDefault() template accessor).
+        mockMvc.perform(get("/account").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Saved addresses")))
+                .andExpect(content().string(containsString("123 Main St")));
+
         assertEquals(1, orderRepo.count());
         assertEquals(3, productRepo.findById(product.getId()).orElseThrow().getStock());
+    }
+
+    @Test
+    void guestCanCheckout_withPaypal() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        String homePage = mockMvc.perform(get("/").session(session))
+                .andReturn().getResponse().getContentAsString();
+        String csrf = extractCsrf(homePage);
+
+        MvcResult addResult = mockMvc.perform(post("/cart/items").session(session)
+                        .param("productId", product.getId().toString())
+                        .param("quantity", "1")
+                        .param("_csrf", csrf))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cart"))
+                .andReturn();
+        Cookie suid = addResult.getResponse().getCookie("suid");
+
+        mockMvc.perform(post("/checkout").session(session).cookie(suid)
+                        .param("_csrf", csrf)
+                        .param("fullName", "Guest Buyer")
+                        .param("email", "guest@example.com")
+                        .param("phoneNumber", "123456789")
+                        .param("country", "US")
+                        .param("state", "CA")
+                        .param("city", "Los Angeles")
+                        .param("street", "9 Guest St")
+                        .param("method", "PAYPAL"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/checkout/confirmation"));
+
+        assertEquals(1, orderRepo.count());
+        assertEquals(4, productRepo.findById(product.getId()).orElseThrow().getStock());
     }
 
     @Test

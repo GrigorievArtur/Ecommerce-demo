@@ -9,20 +9,18 @@ import com.example.ecommercedemo.mappers.shipping.ShippingMapper;
 import com.example.ecommercedemo.repositories.shipping.ShippingPresetsRepo;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ShippingPresetService {
 
-    @Autowired
-    private ShippingPresetsRepo shippingPresetsRepo;
-
-    @Autowired
-    private ShippingMapper shippingMapper;
+    private final ShippingPresetsRepo shippingPresetsRepo;
+    private final ShippingMapper shippingMapper;
 
     // ----------------------------------------------------------
     // DTO methods (public API)
@@ -48,10 +46,17 @@ public class ShippingPresetService {
     // Entity methods (internal / reusable)
     // ----------------------------------------------------------
 
-    //TODO : sa le mut in repo lol, si sa fac refactorin g la tot codu
+    /** Builds an unsaved preset (used for guest checkout, where no user owns an address). */
+    public ShippingPreset toEntity(CreateShippingPresetDTO dto) {
+        return shippingMapper.toEntity(dto);
+    }
+
     public ShippingPreset saveShippingPresetEntity(CreateShippingPresetDTO createShippingPresetDTO, User user) {
         ShippingPreset preset = shippingMapper.toEntity(createShippingPresetDTO);
         preset.setUser(user);
+        if (preset.isDefault()) {
+            clearOtherDefaults(user, null);
+        }
         return shippingPresetsRepo.save(preset);
     }
 
@@ -72,10 +77,28 @@ public class ShippingPresetService {
     public ShippingPreset updateShippingPresetEntity(Long id, UpdateShippingPresetDTO dto, User user) {
         ShippingPreset preset = getShippingPresetEntity(id, user);
         shippingMapper.updatePresetFromDto(dto, preset);
+        if (preset.isDefault()) {
+            clearOtherDefaults(user, preset.getId());
+        }
         return shippingPresetsRepo.save(preset);
     }
 
     public void deleteShippingPreset(Long id, User user) {
         shippingPresetsRepo.delete(getShippingPresetEntity(id, user));
+    }
+
+    /**
+     * A user can only have one default address. Running this before persisting avoids a
+     * second default, which would make {@code findByIsDefaultAndUser} ambiguous.
+     */
+    private void clearOtherDefaults(User user, Long keepId) {
+        for (ShippingPreset preset : shippingPresetsRepo.findByUser(user)) {
+            boolean isAnotherDefault = preset.isDefault()
+                    && (keepId == null || !keepId.equals(preset.getId()));
+            if (isAnotherDefault) {
+                preset.setDefault(false);
+                shippingPresetsRepo.save(preset);
+            }
+        }
     }
 }

@@ -18,5 +18,7 @@ public interface ProductMapper {
     Product toEntity(CreateProductDTO productDTO);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "price.grossPrice", source = "basePrice")
+    @Mapping(target = "price.percentageDiscount", source = "discountPercentage")
     void updateProductFromDTO(UpdateProductDTO updateProductDTO, @MappingTarget Product product);
 }

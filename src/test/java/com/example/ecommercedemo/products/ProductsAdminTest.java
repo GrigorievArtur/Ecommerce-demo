@@ -160,6 +160,29 @@ public class ProductsAdminTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void updateProduct_Admin_priceIsPersisted() throws Exception {
+        var objectMapper = new ObjectMapper();
+        var admin_token = helpers.authenticateCreatedAdmin();
+        var product = helpers.getSavedProduct();
+
+        var update = new com.example.ecommercedemo.dtos.products.UpdateProductDTO();
+        update.setBasePrice(new BigDecimal("42.50"));
+        update.setDiscountPercentage(new BigDecimal("5"));
+
+        mockMvc.perform(
+                        patch("/api/admin/products")
+                                .header("Authorization", "Bearer " + admin_token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(update))
+                                .param("id", product.getId().toString())
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price.grossPrice").value(42.5))
+                .andExpect(jsonPath("$.price.percentageDiscount").value(5));
+    }
+
     //********************************************************************
     // DELETE
     //********************************************************************

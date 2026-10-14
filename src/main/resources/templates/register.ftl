@@ -2,7 +2,7 @@
 <@ui.page title="Create account" description="Create an account for faster checkout and order history.">
   <div class="panel auth-card">
     <h1 class="panel-title">Create your account</h1>
-    <form method="post" action="/register" novalidate>
+    <form method="post" action="/register" novalidate data-loading>
       <@ui.csrfField/>
       <div class="form-grid">
         <div class="field">
@@ -22,7 +22,7 @@
         </div>
         <div class="field">
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" required autocomplete="new-password">
+          <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
           <#if fieldErrors?? && fieldErrors.password??><span class="err">${fieldErrors.password}</span></#if>
         </div>
         <div class="field">

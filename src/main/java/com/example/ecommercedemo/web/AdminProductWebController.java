@@ -24,6 +24,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AdminProductWebController {
 
+    private static final int PAGE_SIZE = 20;
+
     private final ProductService productService;
     private final AnalyticsService analyticsService;
 
@@ -34,10 +36,14 @@ public class AdminProductWebController {
     }
 
     @GetMapping("/products")
-    public String list(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String list(@RequestParam(defaultValue = "0") int page,
+                       @RequestParam(name = "q", required = false) String query,
+                       Model model) {
+        ProductFilter filter = ProductFilter.builder().query(query).build();
         model.addAttribute("products", productService.getAllProducts(
-                new ProductFilter(),
-                PageRequest.of(Math.max(page, 0), 20, Sort.by(Sort.Direction.DESC, "id"))));
+                filter,
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"))));
+        model.addAttribute("q", query);
         return "admin/products";
     }
 
@@ -70,10 +76,11 @@ public class AdminProductWebController {
         }
         if (id == null) {
             productService.createProduct(form.toCreateDTO());
+            redirect.addFlashAttribute("flash", "Product created.");
         } else {
             productService.updateProductById(id, form.toUpdateDTO());
+            redirect.addFlashAttribute("flash", "Product updated.");
         }
-        redirect.addFlashAttribute("flash", "Product saved.");
         return "redirect:/admin/products";
     }
 

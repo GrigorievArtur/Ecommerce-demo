@@ -38,19 +38,42 @@
     </div>
 
     <div class="panel">
-      <h2 class="panel-title">Saved addresses</h2>
+      <div class="page-head">
+        <div>
+          <h2 class="panel-title">Saved addresses</h2>
+          <p class="muted">Used to speed up checkout.</p>
+        </div>
+        <a class="btn btn-primary btn-sm" href="/account/addresses/new">+ Add address</a>
+      </div>
       <#if presets?size == 0>
-        <p class="muted">No saved addresses yet — they’re stored automatically at checkout.</p>
+        <p class="muted">No saved addresses yet — add one and it’ll be ready at checkout.</p>
       <#else>
-        <#list presets as preset>
-          <div class="address-row">
-            <div>
-              <strong>${preset.presetName!''}</strong>
-              <#if preset.isDefault> <span class="chip">Default</span></#if>
-              <div class="cat">${preset.street!''}, ${preset.city!''}, ${preset.country!''}</div>
+        <div class="address-grid">
+          <#list presets as preset>
+            <div class="address-card<#if preset.isDefault()> is-default</#if>">
+              <strong>${preset.presetName!''} <#if preset.isDefault()><span class="chip">Default</span></#if></strong>
+              <address>
+                ${preset.fullName!''}<br>
+                ${preset.street!''} ${preset.building!''} ${preset.apartment!''}<br>
+                ${preset.city!''}, ${preset.state!''} ${preset.postalCode!''}<br>
+                ${preset.country!''}
+              </address>
+              <div class="address-actions">
+                <a class="btn btn-ghost btn-sm" href="/account/addresses/${preset.id}/edit">Edit</a>
+                <#if !preset.isDefault()>
+                  <form class="inline" method="post" action="/account/addresses/${preset.id}/default">
+                    <@ui.csrfField/>
+                    <button class="btn btn-ghost btn-sm" type="submit">Make default</button>
+                  </form>
+                </#if>
+                <form class="inline" method="post" action="/account/addresses/${preset.id}/delete" onsubmit="return confirm('Delete this address?');">
+                  <@ui.csrfField/>
+                  <button class="link-danger" type="submit">Delete</button>
+                </form>
+              </div>
             </div>
-          </div>
-        </#list>
+          </#list>
+        </div>
       </#if>
     </div>
   </div>

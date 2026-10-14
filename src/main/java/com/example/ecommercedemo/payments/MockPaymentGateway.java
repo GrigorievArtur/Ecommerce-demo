@@ -11,6 +11,7 @@ import java.util.UUID;
  * <ul>
  *     <li>Any card ending in <code>0000</code> is declined.</li>
  *     <li>A missing/very short card number is declined.</li>
+ *     <li>PayPal / WebMoney are approved without card details.</li>
  *     <li>Everything else is approved with a fake transaction id.</li>
  * </ul>
  */

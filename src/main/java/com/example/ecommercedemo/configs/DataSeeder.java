@@ -46,7 +46,12 @@ public class DataSeeder implements CommandLineRunner {
         if (!enabled) {
             return;
         }
-        if (productRepo.count() == 0) {
+        long total = productRepo.count();
+        if (total == 0) {
+            seedProducts();
+        } else if (catalogueHasNoPrices()) {
+            // Repair a legacy catalogue where every product has a null/zero price.
+            productRepo.deleteAll();
             seedProducts();
         }
         if (userRepo.findByEmail(adminEmail).isEmpty()) {
@@ -58,6 +63,13 @@ public class DataSeeder implements CommandLineRunner {
                     .build());
             userService.makeAdmin(admin.getId());
         }
+    }
+
+    private boolean catalogueHasNoPrices() {
+        return productRepo.findAll().stream()
+                .allMatch(product -> product.getPrice() == null
+                        || product.getPrice().getGrossPrice() == null
+                        || product.getPrice().getGrossPrice().signum() <= 0);
     }
 
     private void seedProducts() {

@@ -69,9 +69,79 @@ public class CartService {
 
     /** Empties the current cart, e.g. after a successful checkout. */
     public void clearCart(UUID suid) {
-        Cart cart = resolveCart(suid);
+        emptyCart(resolveCart(suid));
+    }
+
+    public void emptyCart(Cart cart) {
         cart.getItems().clear();
         cartRepo.save(cart);
+    }
+
+    /**
+     * Fails with 409 when the cart holds more units than are currently tracked in stock.
+     * Re-checked at checkout because stock can change while a cart sits around.
+     */
+    public void assertItemsInStock(Cart cart) {
+        Map<Long, Product> productMap = loadProductMap(cart);
+        for (CartItem item : cart.getItems()) {
+            Product product = productMap.get(item.getProductId());
+            if (product == null || product.getStock() == null) {
+                continue;
+            }
+            int requested = item.getPriceSnapshot().getQuantity().intValue();
+            if (requested > product.getStock()) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Only " + product.getStock() + " left in stock for " + product.getName());
+            }
+        }
+    }
+
+    /**
+     * Merges the guest cart identified by the {@code suid} cookie into the signed-in user's
+     * cart. Safe to call on every login: it is a no-op when no guest cart exists.
+     */
+    public void mergeGuestCartIntoUserCart(UUID suid, User user) {
+        if (suid == null || user == null) {
+            return;
+        }
+        Cart guestCart = cartRepo.findBySuid(suid).orElse(null);
+        if (guestCart == null || guestCart.getUser() != null) {
+            return;
+        }
+        Cart userCart = cartRepo.findByUserId(user.getId()).orElse(null);
+        if (userCart == null) {
+            guestCart.setUser(user);
+            cartRepo.save(guestCart);
+            return;
+        }
+        if (Objects.equals(userCart.getId(), guestCart.getId())) {
+            return;
+        }
+        if (guestCart.getItems().isEmpty()) {
+            cartRepo.delete(guestCart);
+            return;
+        }
+
+        Set<Long> productIds = new HashSet<>();
+        userCart.getItems().forEach(item -> productIds.add(item.getProductId()));
+        guestCart.getItems().forEach(item -> productIds.add(item.getProductId()));
+        Map<Long, Product> productMap = productRepo.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+        for (CartItem guestItem : guestCart.getItems()) {
+            int quantity = guestItem.getPriceSnapshot().getQuantity().intValue();
+            try {
+                itemService.addItem(userCart, CreateItemDTO.builder()
+                        .productId(guestItem.getProductId())
+                        .quantity(quantity)
+                        .build(), productMap);
+            } catch (ResponseStatusException outOfStock) {
+                // Keep whatever fits; never block a successful sign-in on a stock limit.
+            }
+        }
+        cartRepo.save(userCart);
+        cartRepo.delete(guestCart);
     }
 
     public CartDTO getCartDTO(Cart cart) {

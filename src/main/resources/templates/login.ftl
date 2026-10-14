@@ -3,8 +3,9 @@
   <div class="panel auth-card">
     <h1 class="panel-title">Sign in</h1>
     <#if loginError??><div class="alert alert-error">${loginError}</div></#if>
-    <form method="post" action="/login" class="stack">
+    <form method="post" action="/login" class="stack" data-loading>
       <@ui.csrfField/>
+      <#if continueUrl??><input type="hidden" name="continue" value="${continueUrl}"></#if>
       <div class="field">
         <label for="username">Email</label>
         <input id="username" name="username" type="email" autocomplete="username" required autofocus>

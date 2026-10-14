@@ -39,7 +39,6 @@ public class CheckoutForm {
     private String apartment;
     private String postalCode;
 
-    private boolean savePreset = true;
     private String presetName = "Home";
 
     private PaymentMethod method = PaymentMethod.CARD;
@@ -53,8 +52,12 @@ public class CheckoutForm {
         return method == null || method == PaymentMethod.CARD;
     }
 
-    public boolean isWalletSelected() {
-        return method == PaymentMethod.WALLET;
+    public boolean isPaypalSelected() {
+        return method == PaymentMethod.PAYPAL;
+    }
+
+    public boolean isWebmoneySelected() {
+        return method == PaymentMethod.WEBMONEY;
     }
 
     public CreateShippingPresetDTO toShippingPreset() {

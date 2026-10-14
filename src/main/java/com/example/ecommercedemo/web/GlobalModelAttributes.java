@@ -3,8 +3,10 @@ package com.example.ecommercedemo.web;
 import com.example.ecommercedemo.components.auth.SecurityHelper;
 import com.example.ecommercedemo.enums.products.Category;
 import com.example.ecommercedemo.services.carts.CartService;
+import com.example.ecommercedemo.services.shipping.ShippingPolicy;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.time.Year;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +31,7 @@ public class GlobalModelAttributes {
 
     private final SecurityHelper securityHelper;
     private final CartService cartService;
+    private final ShippingPolicy shippingPolicy;
 
     @Value("${app.name:${spring.application.name:Store}}")
     private String appName;
@@ -59,12 +63,29 @@ public class GlobalModelAttributes {
 
     @ModelAttribute("categories")
     public List<CategoryView> categories() {
-        return java.util.Arrays.stream(Category.values()).map(CategoryView::from).toList();
+        return Arrays.stream(Category.values()).map(CategoryView::from).toList();
     }
 
     @ModelAttribute("csrf")
     public CsrfToken csrf(HttpServletRequest request) {
         return (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+    }
+
+    /** Request path without the query string — used to highlight the active nav item. */
+    @ModelAttribute("currentPath")
+    public String currentPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri == null ? "/" : uri;
+    }
+
+    @ModelAttribute("freeShippingThreshold")
+    public java.math.BigDecimal freeShippingThreshold() {
+        return shippingPolicy.freeThreshold();
+    }
+
+    @ModelAttribute("shippingFlatRate")
+    public java.math.BigDecimal shippingFlatRate() {
+        return shippingPolicy.flatRate();
     }
 
     @ModelAttribute("appName")
@@ -94,7 +115,7 @@ public class GlobalModelAttributes {
     }
 
     /** Convenience for controllers that need to persist the cart cookie. */
-    public static void setCartCookie(jakarta.servlet.http.HttpServletResponse response, UUID suid) {
+    public static void setCartCookie(HttpServletResponse response, UUID suid) {
         if (suid == null) {
             return;
         }

@@ -4,7 +4,7 @@
     <h1><#if mode == "edit">Edit product<#else>New product</#if></h1>
   </div>
 
-  <form class="panel" method="post" action="/admin/products" novalidate>
+  <form class="panel" method="post" action="/admin/products" novalidate data-loading>
     <@ui.csrfField/>
     <#if productId??><input type="hidden" name="id" value="${productId}"></#if>
     <div class="form-grid">

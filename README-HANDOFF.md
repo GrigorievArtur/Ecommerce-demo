@@ -64,7 +64,7 @@ Create the schema and a user matching `src/main/resources/application.properties
 
 ### Tests
 ```bash
-./mvnw test          # 68 tests: API, services, rendering and the full web checkout flow
+./mvnw test          # 81 tests: API, services, rendering, account/address book and the full web checkout flow
 ```
 
 ---
@@ -77,9 +77,12 @@ Create the schema and a user matching `src/main/resources/application.properties
 - `GET /products/{id}` product detail with stock status, sale pricing and **JSON-LD**
 - `GET/POST /cart…` guest + signed-in cart, cookie-backed (`suid`)
 - `GET/POST /checkout` delivery + payment, order confirmation
-- `GET /login`, `GET/POST /register`, `GET /account` (order history + saved addresses)
+- `GET/POST /register`, `GET /account` (order history + **address book**: add, edit, delete, set default)
 - `GET /returns` returns policy
-- Responsive CSS (`static/css/app.css`), light JS enhancement (`static/js/app.js`)
+- Responsive CSS with **automatic + manual dark mode** (`static/css/app.css`), progressive-enhancement JS (`static/js/app.js`)
+- QOL details: dismissible flash messages, back-to-top, quantity steppers, product image gallery,
+  related products, free-delivery progress bar, windowed pagination, print-friendly receipt,
+  skip-link and visible focus states
 
 ### Admin panel (`/admin`, role `ADMIN`)
 - Dashboard with sales analytics and low-stock alerts
@@ -150,7 +153,7 @@ Alternatively use the included `Dockerfile` / `compose.yaml` on any container ho
 
 ## 6. Handover checklist
 
-- [ ] Replace the hard-coded JWT secret in `services/jwt/JwtService.java` with an env var.
+- [x] JWT secret is externalised as `app.jwt.secret` (env `APP_JWT_SECRET`) — set a long random value per environment.
 - [ ] Set a strong `APP_ADMIN_PASSWORD` and disable `APP_SEED_ENABLED`.
 - [ ] Create a least-privilege MySQL user (no root).
 - [ ] Enable HTTPS (HSTS) and set `server.forward-headers-strategy=framework` behind Nginx.
@@ -170,7 +173,7 @@ Alternatively use the included `Dockerfile` / `compose.yaml` on any container ho
 | **Behavioural analytics** | Sales analytics are native; use GA4/Plausible for sessions, funnels and heatmaps. |
 | **Transactional email** | No SMTP wiring for receipts, shipping or returns yet. |
 | **Returns workflow** | `/returns` is a policy + mailto; no RMA entity or refund state machine. |
-| **Guest checkout** | Checkout requires sign-in because `ShippingPreset.user` is non-null. Allow guest orders either by nullable user or a separate shipping DTO. |
+| ~~Guest checkout~~ | **Supported** — the delivery address is snapshotted onto the order as JSON, so no user account is required. |
 | **Search** | SQL `LIKE` search; consider a proper index for large catalogues. |
 | **Image uploads** | Admin accepts an image URL; add object-storage upload (S3) for self-service. |
 | **Rate limiting / audit log** | Add at the edge (Nginx/Bucket4j) and a security audit trail. |

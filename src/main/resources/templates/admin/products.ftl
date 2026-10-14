@@ -1,9 +1,18 @@
 <#import "../partials/layout.ftl" as ui>
 <@ui.page title="Products" description="Create, edit and remove products.">
   <div class="page-head">
-    <h1>Products</h1>
+    <div>
+      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/admin">Dashboard</a> / Products</nav>
+      <h1>Products</h1>
+    </div>
     <a class="btn btn-primary" href="/admin/products/new">+ Add product</a>
   </div>
+
+  <form class="filters" method="get" action="/admin/products" data-auto-submit>
+    <input type="search" name="q" value="${(q)!''}" placeholder="Search products…" aria-label="Search products">
+    <button class="btn btn-primary" type="submit">Search</button>
+    <#if q?? && q?has_content><a class="btn btn-ghost" href="/admin/products">Clear</a></#if>
+  </form>
 
   <p class="muted">${products.totalElements} product<#if products.totalElements != 1>s</#if></p>
   <div class="table-wrap">
@@ -36,15 +45,11 @@
     </table>
   </div>
 
-  <#if products.totalPages gt 1>
-    <nav class="pagination">
-      <#list 0..<products.totalPages as i>
-        <#if i == products.number>
-          <span class="page current">${i + 1}</span>
-        <#else>
-          <a class="page" href="/admin/products?page=${i}">${i + 1}</a>
-        </#if>
-      </#list>
-    </nav>
+  <#if products.content?size == 0>
+    <p class="empty">No products matched “${(q)!''}”. <a href="/admin/products">Show all</a></p>
   </#if>
+
+  <#assign adminQuery = "">
+  <#if q?? && q?has_content><#assign adminQuery = "q=" + q?url></#if>
+  <@ui.pagination products.number products.totalPages "/admin/products" adminQuery/>
 </@ui.page>

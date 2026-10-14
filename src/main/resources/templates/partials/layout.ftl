@@ -33,7 +33,8 @@
     <span class="cat">${(p.categoryLabel)!''}</span>
     <h3 class="card-title"><a href="/products/${p.id}">${(p.name)!''}</a></h3>
     <div class="price"><@priceBlock p.price/></div>
-    <form method="post" action="/cart/items">
+    <p class="stock-line"><@stockBadge p/></p>
+    <form method="post" action="/cart/items" data-loading>
       <@csrfField/>
       <input type="hidden" name="productId" value="${p.id}">
       <input type="hidden" name="quantity" value="1">
@@ -41,6 +42,27 @@
     </form>
   </div>
 </article>
+</#macro>
+
+<#-- Windowed pagination. "path" is the URL without query, "query" is the extra params. -->
+<#macro pagination current total path query="">
+<#if total gt 1>
+<nav class="pagination" aria-label="Pagination">
+  <#if current gt 0><a class="page nav" rel="prev" href="${path}?page=${current - 1}<#if query?has_content>&amp;${query}</#if>"><span aria-hidden="true">‹</span><span class="sr-only">Previous page</span></a><#else><span class="page nav disabled" aria-disabled="true" aria-hidden="true">‹</span></#if>
+  <#list 0..<total as i>
+    <#if i == current>
+      <span class="page current" aria-current="page">${i + 1}</span>
+    <#elseif i == 0 || i == total - 1 || (i >= current - 2 && i <= current + 2)>
+      <a class="page" href="${path}?page=${i}<#if query?has_content>&amp;${query}</#if>">${i + 1}</a>
+    <#elseif i == 1 && current gt 3>
+      <span class="page gap" aria-hidden="true">…</span>
+    <#elseif i == total - 2 && current lt total - 4>
+      <span class="page gap" aria-hidden="true">…</span>
+    </#if>
+  </#list>
+  <#if current lt total - 1><a class="page nav" rel="next" href="${path}?page=${current + 1}<#if query?has_content>&amp;${query}</#if>"><span aria-hidden="true">›</span><span class="sr-only">Next page</span></a><#else><span class="page nav disabled" aria-disabled="true" aria-hidden="true">›</span></#if>
+</nav>
+</#if>
 </#macro>
 
 <#macro page title description="">
@@ -57,16 +79,18 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="${canonicalUrl!('/')}">
-  <link rel="icon" href="/images/placeholder.svg">
+  <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+  <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}</script>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="container header-inner">
-    <a class="brand" href="/">${appName}<span>.</span></a>
+    <a class="brand" href="/" aria-label="${appName} home">${appName}<span>.</span></a>
     <form class="search" action="/products" method="get" role="search">
       <label class="sr-only" for="site-search">Search products</label>
-      <input id="site-search" type="search" name="q" value="${(q)!''}" placeholder="Search sets, minifigures, accessories…">
+      <input id="site-search" type="search" name="q" value="${(q)!''}" placeholder="Search sets, minifigures, accessories…" autocomplete="off">
       <button class="btn btn-ghost" type="submit">Search</button>
     </form>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation">
@@ -75,32 +99,36 @@
       <span class="nav-toggle-bar"></span>
     </button>
     <nav class="nav" id="primary-nav" aria-label="Main">
-      <a href="/products">Shop</a>
-      <#if currentUser?? && currentUser.admin><a href="/admin">Admin</a></#if>
-      <a class="cart-link" href="/cart">Cart <span class="pill">${cartCount}</span></a>
+      <a href="/products"<#if currentPath?starts_with("/products")> class="active" aria-current="page"</#if>>Shop</a>
+      <#if currentUser?? && currentUser.admin><a href="/admin"<#if currentPath?starts_with("/admin")> class="active" aria-current="page"</#if>>Admin</a></#if>
+      <a class="cart-link" href="/cart"<#if currentPath?starts_with("/cart")> class="active" aria-current="page"</#if>>Cart <span class="pill" aria-live="polite">${cartCount}</span><span class="sr-only"> items in cart</span></a>
       <#if currentUser??>
-        <a href="/account">${currentUser.displayName}</a>
+        <a href="/account"<#if currentPath?starts_with("/account")> class="active" aria-current="page"</#if>>${currentUser.displayName}</a>
         <form class="inline" method="post" action="/logout"><@csrfField/><button class="btn btn-ghost btn-sm" type="submit">Sign out</button></form>
       <#else>
-        <a href="/login">Sign in</a>
+        <a href="/login"<#if currentPath?starts_with("/login")> class="active" aria-current="page"</#if>>Sign in</a>
         <a class="btn btn-primary btn-sm" href="/register">Create account</a>
       </#if>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme" title="Switch colour theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
     </nav>
   </div>
   <div class="catbar">
     <div class="container catbar-inner">
       <a href="/products"<#if !selectedCategory??> class="active"</#if>>All products</a>
       <#list categories as c>
-        <a href="/products?category=${c.name}"<#if selectedCategory?? && selectedCategory.name == c.name> class="active"</#if>>${c.label}</a>
+        <a href="/products?category=${c.name}"<#if selectedCategory?? && selectedCategory.name == c.name> class="active" aria-current="page"</#if>>${c.label}</a>
       </#list>
     </div>
   </div>
 </header>
 
-<main>
+<main id="main">
   <div class="container">
-    <#if flash??><div class="alert alert-ok" role="status">${flash}</div></#if>
-    <#if flashError??><div class="alert alert-error" role="alert">${flashError}</div></#if>
+    <#if flash??><div class="alert alert-ok" role="status"><span>${flash}</span><button class="alert-close" type="button" aria-label="Dismiss message" data-dismiss="alert">×</button></div></#if>
+    <#if flashError??><div class="alert alert-error" role="alert"><span>${flashError}</span><button class="alert-close" type="button" aria-label="Dismiss message" data-dismiss="alert">×</button></div></#if>
     <#nested>
   </div>
 </main>
@@ -129,10 +157,12 @@
     <div>
       <h4>Secure shopping</h4>
       <p>All card payments are processed over encrypted connections. We never store your card details.</p>
+      <p class="pay-strip">Card · PayPal · WebMoney</p>
     </div>
   </div>
   <div class="container copyright">© ${year} ${appName}. All rights reserved.</div>
 </footer>
+<button class="back-to-top" type="button" data-back-to-top aria-label="Back to top" hidden>↑</button>
 <script src="/js/app.js" defer></script>
 </body>
 </html>

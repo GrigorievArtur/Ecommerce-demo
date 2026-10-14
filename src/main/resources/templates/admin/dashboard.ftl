@@ -3,6 +3,7 @@
   <div class="page-head">
     <h1>Dashboard</h1>
     <div class="actions">
+      <a class="btn btn-ghost" href="/">View storefront</a>
       <a class="btn btn-ghost" href="/admin/products">Manage products</a>
       <a class="btn btn-primary" href="/admin/products/new">+ Add product</a>
     </div>

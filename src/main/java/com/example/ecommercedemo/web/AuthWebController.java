@@ -22,6 +22,10 @@ public class AuthWebController {
 
     @GetMapping("/login")
     public String login(HttpServletRequest request, Model model) {
+        String cont = request.getParameter("continue");
+        if (cont != null && cont.startsWith("/") && !cont.startsWith("//") && !cont.startsWith("/error")) {
+            model.addAttribute("continueUrl", cont);
+        }
         if (request.getParameter("error") != null) {
             model.addAttribute("loginError", "Invalid email or password.");
         }

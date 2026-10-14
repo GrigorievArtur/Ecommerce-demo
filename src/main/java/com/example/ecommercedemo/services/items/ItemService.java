@@ -9,10 +9,9 @@ import com.example.ecommercedemo.entities.products.Product;
 import com.example.ecommercedemo.mappers.products.ProductMapper;
 import com.example.ecommercedemo.models.pricing.Price;
 import com.example.ecommercedemo.models.pricing.PriceSnapshot;
-import com.example.ecommercedemo.repositories.products.ProductRepo;
 import com.example.ecommercedemo.services.pricing.PriceService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,16 +23,11 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ItemService {
 
-    @Autowired
-    private ProductRepo productRepo;
-
-    @Autowired
-    private ProductMapper productMapper;
-
-    @Autowired
-    private PriceService priceService;
+    private final ProductMapper productMapper;
+    private final PriceService priceService;
 
     public void addItem(Cart cart, CreateItemDTO dto, Map<Long, Product> productMap) {
         Long productId = dto.getProductId();
@@ -49,18 +43,17 @@ public class ItemService {
 
         if (existing.isEmpty()) {
             assertStock(product, dto.getQuantity());
-            PriceSnapshot snapshot = snapshotFromProduct(product, dto.getQuantity());
             CartItem item = CartItem.builder()
                     .cart(cart)
                     .productId(productId)
-                    .priceSnapshot(snapshot)
+                    .priceSnapshot(snapshotFromProduct(product, dto.getQuantity()))
                     .build();
             items.add(item);
         } else {
             CartItem item = existing.get();
-            int newQty = item.getPriceSnapshot().getQuantity().intValue() + dto.getQuantity();
-            assertStock(product, newQty);
-            item.setPriceSnapshot(refreshSnapshotFromProduct(item.getPriceSnapshot(), product, newQty));
+            int newQuantity = item.getPriceSnapshot().getQuantity().intValue() + dto.getQuantity();
+            assertStock(product, newQuantity);
+            item.setPriceSnapshot(refreshSnapshotFromProduct(product, newQuantity));
         }
     }
 
@@ -71,31 +64,28 @@ public class ItemService {
         int remaining = item.getPriceSnapshot().getQuantity().intValue() - quantity;
         if (remaining <= 0) {
             cart.getItems().remove(item);
-        } else {
-            item.setPriceSnapshot(refreshSnapshotFromProduct(null, product, remaining));
+        } else if (product != null) {
+            item.setPriceSnapshot(refreshSnapshotFromProduct(product, remaining));
         }
     }
 
     public void removeItem(Cart cart, Long productId) {
-        CartItem item = findByProductId(cart, productId);
-        cart.getItems().remove(item);
+        cart.getItems().remove(findByProductId(cart, productId));
     }
 
-    /** Returns null if product deleted — caller should purge null entries. */
+    /** Returns null if the product was deleted — the caller purges null entries. */
     public ItemDTO toDTO(CartItem item, Map<Long, Product> productMap) {
         Long productId = item.getProductId();
         Product product = productMap.get(productId);
-        if (product == null) return null;
-
-        PriceSnapshot snapshot = item.getPriceSnapshot();
-        int currentQty = snapshot.getQuantity().intValue();
-
-        PriceSnapshot effective = priceService.refreshSnapshot(snapshot, () ->
+        if (product == null) {
+            return null;
+        }
+        int currentQuantity = item.getPriceSnapshot().getQuantity().intValue();
+        PriceSnapshot effective = priceService.refreshSnapshot(item.getPriceSnapshot(), () ->
                 product.getPrice().toBuilder()
-                        .quantity(BigDecimal.valueOf(currentQty))
+                        .quantity(BigDecimal.valueOf(currentQuantity))
                         .build()
         );
-
         return ItemDTO.builder()
                 .product(productMapper.toDTO(product))
                 .priceSnapshot(effective)
@@ -122,16 +112,13 @@ public class ItemService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + dto.getProductId());
         }
         assertStock(product, dto.getQuantity());
-        Price live = product.getPrice().toBuilder()
-                .quantity(BigDecimal.valueOf(dto.getQuantity()))
-                .build();
         return CartItem.builder()
                 .productId(dto.getProductId())
-                .priceSnapshot(priceService.snapshotFrom(live))
+                .priceSnapshot(snapshotFromProduct(product, dto.getQuantity()))
                 .build();
     }
 
-    /** Remove cart items whose products no longer exist in the DB. Returns true if any were purged. */
+    /** Removes cart items whose products no longer exist. Returns true if any were purged. */
     public boolean purgeOrphans(Cart cart, Map<Long, Product> productMap) {
         return cart.getItems().removeIf(item -> !productMap.containsKey(item.getProductId()));
     }
@@ -154,18 +141,8 @@ public class ItemService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not in cart"));
     }
 
-    private PriceSnapshot refreshSnapshot(PriceSnapshot original, int quantity, Long productId) {
-        return priceService.refreshSnapshot(original, () -> {
-            Product product = productRepo.findById(productId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
-            return product.getPrice().toBuilder()
-                    .quantity(BigDecimal.valueOf(quantity))
-                    .build();
-        });
-    }
-
-    private PriceSnapshot refreshSnapshotFromProduct(PriceSnapshot original, Product product, int quantity) {
-        return priceService.refreshSnapshot(original, () ->
+    private PriceSnapshot refreshSnapshotFromProduct(Product product, int quantity) {
+        return priceService.refreshSnapshot(null, () ->
                 product.getPrice().toBuilder()
                         .quantity(BigDecimal.valueOf(quantity))
                         .build()
