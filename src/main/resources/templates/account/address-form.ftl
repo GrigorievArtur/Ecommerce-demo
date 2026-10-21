@@ -1,7 +1,11 @@
 <#import "../partials/layout.ftl" as ui>
 <@ui.page title=((mode == "edit")?then("Edit address", "Add address")) description="Manage a saved delivery address.">
   <div class="page-head">
-    <h1><#if mode == "edit">Edit address<#else>Add address</#if></h1>
+    <div>
+      <span class="eyebrow">Address book</span>
+      <h1><#if mode == "edit">Edit address<#else>Add address</#if></h1>
+      <p>Saved addresses are offered at checkout to make ordering faster.</p>
+    </div>
     <a class="btn btn-ghost" href="/account">Back to account</a>
   </div>
 

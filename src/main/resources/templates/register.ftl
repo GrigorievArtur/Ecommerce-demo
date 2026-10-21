@@ -1,7 +1,9 @@
 <#import "partials/layout.ftl" as ui>
 <@ui.page title="Create account" description="Create an account for faster checkout and order history.">
   <div class="panel auth-card">
+    <span class="eyebrow">Join the store</span>
     <h1 class="panel-title">Create your account</h1>
+    <p class="note">Faster checkout, saved addresses and full order history.</p>
     <form method="post" action="/register" novalidate data-loading>
       <@ui.csrfField/>
       <div class="form-grid">

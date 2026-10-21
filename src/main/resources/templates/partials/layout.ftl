@@ -19,7 +19,37 @@
 <#if pct gt 0><#local sale = gross * (100 - pct) / 100><span class="price-now"><@money sale/></span> <s class="price-was"><@money gross/></s><#else><span class="price-now"><@money gross/></span></#if>
 </#macro>
 
-<#macro stockBadge p><#if !p.available><span class="stock out">Sold out</span><#elseif p.stock?? && p.stock <= 5><span class="stock low">Only ${p.stock} left</span><#elseif p.stock??><span class="stock in">In stock</span><#else><span class="stock in">Available</span></#if></#macro>
+<#macro stockBadge p><#if !p.available><span class="stock out">Sold out</span><#elseif p.stock?? && p.stock <= 5><span class="stock low">Only ${p.stock} left in stock</span><#elseif p.stock??><span class="stock in">${p.stock} in stock</span><#else><span class="stock in">Available to order</span></#if></#macro>
+
+<#-- Deliberate empty states: an icon, a short explanation and one clear action. -->
+<#macro emptyState icon title text actionHref="" actionLabel="">
+<div class="empty-state">
+  <span class="empty-icon" aria-hidden="true">
+    <#switch icon>
+      <#case "cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.2a1 1 0 0 0 1-.8L20 7H6"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg>
+      <#break>
+      <#case "search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+      <#break>
+      <#case "box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/></svg>
+      <#break>
+      <#case "orders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6"/></svg>
+      <#break>
+      <#case "pin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <#break>
+      <#default>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    </#switch>
+  </span>
+  <h2>${title}</h2>
+  <p>${text}</p>
+  <#if actionHref?has_content><div class="actions"><a class="btn btn-primary" href="${actionHref}">${actionLabel}</a></div></#if>
+</div>
+</#macro>
 
 <#macro productCard p>
 <#local pct = (p.price.percentageDiscount)!0>
@@ -38,7 +68,7 @@
       <@csrfField/>
       <input type="hidden" name="productId" value="${p.id}">
       <input type="hidden" name="quantity" value="1">
-      <button class="btn btn-primary btn-block" type="submit" <#if !p.available>disabled</#if>>Add to cart</button>
+      <button class="btn btn-soft btn-block" type="submit" <#if !p.available>disabled</#if>>Add to cart</button>
     </form>
   </div>
 </article>
@@ -136,7 +166,7 @@
 <footer class="site-footer">
   <div class="container footer-grid">
     <div>
-      <h4>${appName}</h4>
+      <h4 class="footer-brand">${appName}</h4>
       <p>Quality sets, minifigures and accessories — shipped fast and packed with care.</p>
     </div>
     <div>
@@ -160,7 +190,7 @@
       <p class="pay-strip">Card · PayPal · WebMoney</p>
     </div>
   </div>
-  <div class="container copyright">© ${year} ${appName}. All rights reserved.</div>
+  <div class="container copyright">© ${year} ${appName}. All rights reserved. Built for bricks, minifigures and the people who love them.</div>
 </footer>
 <button class="back-to-top" type="button" data-back-to-top aria-label="Back to top" hidden>↑</button>
 <script src="/js/app.js" defer></script>

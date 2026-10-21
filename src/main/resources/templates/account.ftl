@@ -1,22 +1,26 @@
 <#import "partials/layout.ftl" as ui>
 <@ui.page title="My account" description="View your order history, saved addresses and returns.">
   <div class="page-head">
-    <h1>My account</h1>
-    <p class="muted">${currentUser.email}</p>
+    <div>
+      <span class="eyebrow">Account</span>
+      <h1>My account</h1>
+      <p>${currentUser.email}</p>
+    </div>
+    <a class="btn btn-ghost" href="/returns">Returns &amp; refunds</a>
   </div>
 
   <div class="stack">
-    <div class="panel">
+    <section class="panel">
       <h2 class="panel-title">Order history</h2>
       <#if orders?size == 0>
-        <p class="empty">You haven’t placed any orders yet. <a href="/products">Start shopping →</a></p>
+        <@ui.emptyState icon="orders" title="No orders yet" text="When you place an order it will appear here, with a one-click way to start a return." actionHref="/products" actionLabel="Browse the catalogue"/>
       <#else>
         <#list orders as order>
           <#assign orderTotal = 0>
           <#list order.items as item>
             <#assign orderTotal = orderTotal + ui.lineTotal(item.priceSnapshot)>
           </#list>
-          <div class="order-card">
+          <article class="order-card">
             <div class="order-head">
               <div>
                 <strong>Order #${order.id}</strong>
@@ -32,26 +36,26 @@
             <div class="actions">
               <a class="btn btn-ghost btn-sm" href="/returns">Request a return</a>
             </div>
-          </div>
+          </article>
         </#list>
       </#if>
-    </div>
+    </section>
 
-    <div class="panel">
+    <section class="panel">
       <div class="page-head">
         <div>
           <h2 class="panel-title">Saved addresses</h2>
           <p class="muted">Used to speed up checkout.</p>
         </div>
-        <a class="btn btn-primary btn-sm" href="/account/addresses/new">+ Add address</a>
+        <a class="btn btn-primary btn-sm" href="/account/addresses/new">Add address</a>
       </div>
       <#if presets?size == 0>
-        <p class="muted">No saved addresses yet — add one and it’ll be ready at checkout.</p>
+        <@ui.emptyState icon="pin" title="No saved addresses" text="Add an address once and it will be ready to pick at checkout." actionHref="/account/addresses/new" actionLabel="Add your first address"/>
       <#else>
         <div class="address-grid">
           <#list presets as preset>
-            <div class="address-card<#if preset.isDefault()> is-default</#if>">
-              <strong>${preset.presetName!''} <#if preset.isDefault()><span class="chip">Default</span></#if></strong>
+            <article class="address-card<#if preset.isDefault()> is-default</#if>">
+              <strong>${preset.presetName!''} <#if preset.isDefault()><span class="chip chip-brand">Default</span></#if></strong>
               <address>
                 ${preset.fullName!''}<br>
                 ${preset.street!''} ${preset.building!''} ${preset.apartment!''}<br>
@@ -71,10 +75,10 @@
                   <button class="link-danger" type="submit">Delete</button>
                 </form>
               </div>
-            </div>
+            </article>
           </#list>
         </div>
       </#if>
-    </div>
+    </section>
   </div>
 </@ui.page>

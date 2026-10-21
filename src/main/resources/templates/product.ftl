@@ -32,7 +32,7 @@
 
     <div class="stack">
       <div>
-        <span class="cat">${(product.categoryLabel)!''}</span>
+        <span class="eyebrow">${(product.categoryLabel)!''}</span>
         <h1>${(product.name)!''}</h1>
         <div class="price"><@ui.priceBlock product.price/></div>
         <p class="stock-line"><@ui.stockBadge product/></p>
@@ -56,11 +56,11 @@
             </button>
           </div>
         </form>
-        <p class="note">Secure checkout · 30-day returns · Dispatched within 24h</p>
+        <p class="note">Secure checkout · 30-day returns · Dispatched within 24 hours</p>
       </div>
 
       <div class="panel">
-        <h2 class="panel-title">Description</h2>
+        <h2 class="panel-title">About this set</h2>
         <p>${(product.description)!''}</p>
       </div>
     </div>
@@ -68,12 +68,12 @@
 
   <#if related?? && related?size gt 0>
     <section class="related">
-      <div class="page-head">
+      <div class="section-head">
         <div>
           <h2>You may also like</h2>
           <p>More from ${(product.categoryLabel)!''}.</p>
         </div>
-        <a href="/products?category=${(product.categoryName)!''}">View category →</a>
+        <a class="btn btn-tertiary" href="/products?category=${(product.categoryName)!''}">View category</a>
       </div>
       <div class="grid">
         <#list related as p><@ui.productCard p/></#list>

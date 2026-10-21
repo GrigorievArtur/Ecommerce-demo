@@ -1,7 +1,7 @@
 <#import "partials/layout.ftl" as ui>
 <@ui.page title=errorTitle description="An error occurred">
   <div class="panel auth-card center">
-    <p class="cat">Error ${statusCode}</p>
+    <span class="eyebrow">Error ${statusCode}</span>
     <h1>${errorTitle}</h1>
     <p class="muted">${errorMessage}</p>
     <div class="actions actions-center">

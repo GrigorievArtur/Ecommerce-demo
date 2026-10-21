@@ -9,7 +9,11 @@
 
 <@ui.page title="Your cart" description="Review the items in your cart and proceed to secure checkout.">
   <div class="page-head">
-    <h1>Your cart</h1>
+    <div>
+      <span class="eyebrow">Basket</span>
+      <h1>Your cart</h1>
+      <#if cart.items?size gt 0><p>${cartCount} item<#if cartCount != 1>s</#if> ready to go.</p></#if>
+    </div>
     <#if cart.items?size gt 0>
       <form class="inline" method="post" action="/cart/clear" onsubmit="return confirm('Remove all items from your cart?');">
         <@ui.csrfField/>
@@ -19,7 +23,7 @@
   </div>
 
   <#if cart.items?size == 0>
-    <p class="empty">Your cart is empty. <a href="/products">Start shopping →</a></p>
+    <@ui.emptyState icon="cart" title="Your cart is empty" text="Nothing here yet. Browse the catalogue and add a set, minifigure or accessory to get started." actionHref="/products" actionLabel="Start shopping"/>
   <#else>
     <div class="two-col">
       <div class="panel">
@@ -76,7 +80,7 @@
         </#if>
 
         <div class="btn-stack">
-          <a class="btn btn-primary btn-block" href="/checkout">Proceed to checkout</a>
+          <a class="btn btn-primary btn-block btn-lg" href="/checkout">Proceed to checkout</a>
           <a class="btn btn-ghost btn-block" href="/products">Continue shopping</a>
         </div>
       </div>

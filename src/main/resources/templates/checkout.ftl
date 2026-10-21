@@ -9,8 +9,12 @@
 
 <@ui.page title="Checkout" description="Secure checkout — pay by card, PayPal or WebMoney.">
   <div class="page-head">
-    <h1>Checkout</h1>
-    <#if currentUser??><p class="muted">Signed in as ${currentUser.email}</p></#if>
+    <div>
+      <span class="eyebrow">Secure checkout</span>
+      <h1>Checkout</h1>
+      <#if currentUser??><p>Signed in as ${currentUser.email}</p></#if>
+    </div>
+    <a class="btn btn-tertiary" href="/cart">Back to cart</a>
   </div>
 
   <#if paymentError??><div class="alert alert-error" role="alert">${paymentError}</div></#if>
@@ -19,9 +23,8 @@
     <div class="panel checkout-auth">
       <div class="checkout-auth-inner">
         <strong>Have an account?</strong>
-        <a class="btn btn-primary" href="/login?continue=/checkout">Sign in</a>
-        <span class="muted">or</span>
-        <a class="btn btn-ghost" href="#checkout-form">Continue as guest</a>
+        <a class="btn btn-primary btn-sm" href="/login?continue=/checkout">Sign in</a>
+        <span class="muted">or continue as a guest below</span>
       </div>
       <p class="note">Guest checkout is available — you can order without creating an account.</p>
     </div>
@@ -31,30 +34,33 @@
     <form id="checkout-form" class="panel" method="post" action="/checkout" novalidate data-loading>
       <@ui.csrfField/>
 
-      <#if !isGuest && presets?? && presets?size gt 0>
-        <h2 class="panel-title">Delivery address</h2>
-        <div class="saved-choices">
-          <#list presets as preset>
+      <div class="form-section">
+        <#if !isGuest && presets?? && presets?size gt 0>
+          <h2 class="panel-title">Delivery address</h2>
+          <div class="saved-choices">
+            <#list presets as preset>
+              <label class="saved-choice">
+                <input type="radio" name="shippingPresetId" value="${preset.id}" <#if (defaultPresetId?? && defaultPresetId == preset.id) || (selectedPresetId?? && selectedPresetId == preset.id)>checked</#if>>
+                <span>
+                  <strong>${preset.presetName!''} <#if preset.isDefault()><span class="chip chip-brand">Default</span></#if></strong>
+                  <span class="muted">${preset.street!''}, ${preset.city!''}, ${preset.country!''}</span>
+                </span>
+              </label>
+            </#list>
             <label class="saved-choice">
-              <input type="radio" name="shippingPresetId" value="${preset.id}" <#if (defaultPresetId?? && defaultPresetId == preset.id) || (selectedPresetId?? && selectedPresetId == preset.id)>checked</#if>>
+              <input type="radio" name="shippingPresetId" value="" <#if !(defaultPresetId??) && !(selectedPresetId??)>checked</#if>>
               <span>
-                <strong>${preset.presetName!''} <#if preset.isDefault()><span class="chip">Default</span></#if></strong>
-                <span class="muted">${preset.street!''}, ${preset.city!''}, ${preset.country!''}</span>
+                <strong>Use a new address</strong>
+                <span class="muted">Enter the delivery details below</span>
               </span>
             </label>
-          </#list>
-          <label class="saved-choice">
-            <input type="radio" name="shippingPresetId" value="" <#if !(defaultPresetId??) && !(selectedPresetId??)>checked</#if>>
-            <span>
-              <strong>Use a new address</strong>
-              <span class="muted">Enter the delivery details below</span>
-            </span>
-          </label>
-        </div>
-      </#if>
+          </div>
+        </#if>
+      </div>
 
-      <div id="new-address-fields">
+      <div id="new-address-fields" class="form-section">
         <h2 class="panel-title">Delivery details</h2>
+        <p class="note">We only use these details to deliver this order.</p>
         <div class="form-grid">
           <div class="field full">
             <label for="fullName">Full name</label>
@@ -115,63 +121,65 @@
         </div>
       </div>
 
-      <h2 class="panel-title panel-title-spaced">Payment method</h2>
-      <p class="note">Sandbox gateway: <strong>${paymentProvider!''}</strong>. Cards ending in 0000 are declined.</p>
-      <div class="radio-row pay-methods">
-        <label class="radio pay-option">
-          <input type="radio" name="method" value="CARD" <#if checkoutForm.cardSelected>checked</#if>>
-          <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
-            <path d="M2 10h20" stroke="currentColor" stroke-width="1.7"/>
-          </svg>
-          <span>Credit / debit card</span>
-        </label>
-        <label class="radio pay-option">
-          <input type="radio" name="method" value="PAYPAL" <#if checkoutForm.paypalSelected>checked</#if>>
-          <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="11" fill="#0070ba"/>
-            <text x="12" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui, sans-serif">P</text>
-          </svg>
-          <span>PayPal</span>
-        </label>
-        <label class="radio pay-option">
-          <input type="radio" name="method" value="WEBMONEY" <#if checkoutForm.webmoneySelected>checked</#if>>
-          <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="11" fill="#0069b4"/>
-            <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" font-family="system-ui, sans-serif">W</text>
-          </svg>
-          <span>WebMoney</span>
-        </label>
-      </div>
+      <div class="form-section">
+        <h2 class="panel-title">Payment method</h2>
+        <p class="note">Sandbox gateway: <strong>${paymentProvider!''}</strong>. Cards ending in 0000 are declined.</p>
+        <div class="radio-row pay-methods" role="radiogroup" aria-label="Payment method">
+          <label class="radio pay-option">
+            <input type="radio" name="method" value="CARD" <#if checkoutForm.cardSelected>checked</#if>>
+            <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M2 10h20" stroke="currentColor" stroke-width="1.7"/>
+            </svg>
+            <span>Credit / debit card</span>
+          </label>
+          <label class="radio pay-option">
+            <input type="radio" name="method" value="PAYPAL" <#if checkoutForm.paypalSelected>checked</#if>>
+            <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="11" fill="#0070ba"/>
+              <text x="12" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui, sans-serif">P</text>
+            </svg>
+            <span>PayPal</span>
+          </label>
+          <label class="radio pay-option">
+            <input type="radio" name="method" value="WEBMONEY" <#if checkoutForm.webmoneySelected>checked</#if>>
+            <svg class="pay-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="11" fill="#0069b4"/>
+              <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" font-family="system-ui, sans-serif">W</text>
+            </svg>
+            <span>WebMoney</span>
+          </label>
+        </div>
 
-      <p id="redirect-note" class="note" hidden>You’ll be redirected to complete payment securely.</p>
+        <p id="redirect-note" class="note" hidden>You’ll be redirected to complete payment securely.</p>
 
-      <div id="card-fields" class="form-grid card-fields">
-        <div class="field full">
-          <label for="cardNumber">Card number</label>
-          <input id="cardNumber" name="cardNumber" value="${(checkoutForm.cardNumber)!''}" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242">
-        </div>
-        <div class="field full">
-          <label for="cardHolder">Name on card</label>
-          <input id="cardHolder" name="cardHolder" value="${(checkoutForm.cardHolder)!''}" autocomplete="cc-name">
-        </div>
-        <div class="field">
-          <label for="expiry">Expiry (MM/YY)</label>
-          <input id="expiry" name="expiry" value="${(checkoutForm.expiry)!''}" placeholder="12/28">
-        </div>
-        <div class="field">
-          <label for="cvc">CVC</label>
-          <input id="cvc" name="cvc" value="${(checkoutForm.cvc)!''}" inputmode="numeric" autocomplete="cc-csc" placeholder="123">
+        <div id="card-fields" class="form-grid card-fields">
+          <div class="field full">
+            <label for="cardNumber">Card number</label>
+            <input id="cardNumber" name="cardNumber" value="${(checkoutForm.cardNumber)!''}" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242">
+          </div>
+          <div class="field full">
+            <label for="cardHolder">Name on card</label>
+            <input id="cardHolder" name="cardHolder" value="${(checkoutForm.cardHolder)!''}" autocomplete="cc-name">
+          </div>
+          <div class="field">
+            <label for="expiry">Expiry (MM/YY)</label>
+            <input id="expiry" name="expiry" value="${(checkoutForm.expiry)!''}" placeholder="12/28">
+          </div>
+          <div class="field">
+            <label for="cvc">CVC</label>
+            <input id="cvc" name="cvc" value="${(checkoutForm.cvc)!''}" inputmode="numeric" autocomplete="cc-csc" placeholder="123">
+          </div>
         </div>
       </div>
 
       <div class="actions">
-        <button class="btn btn-primary" type="submit">Pay <@ui.money grand/> securely</button>
+        <button class="btn btn-primary btn-lg" type="submit">Pay <@ui.money grand/> securely</button>
       </div>
       <p class="note">By ordering you agree to our terms and 30-day returns policy.</p>
     </form>
 
-    <div class="panel">
+    <aside class="panel" aria-label="Order summary">
       <h2 class="panel-title">Order summary</h2>
       <#list cart.items as item>
         <#assign snap = item.priceSnapshot>
@@ -198,6 +206,6 @@
       <div class="btn-stack">
         <a class="btn btn-ghost btn-block" href="/cart">Edit cart</a>
       </div>
-    </div>
+    </aside>
   </div>
 </@ui.page>

@@ -1,8 +1,9 @@
 <#import "partials/layout.ftl" as ui>
 <@ui.page title="Sign in" description="Sign in to your account to view orders and check out faster.">
   <div class="panel auth-card">
+    <span class="eyebrow">Welcome back</span>
     <h1 class="panel-title">Sign in</h1>
-    <#if loginError??><div class="alert alert-error">${loginError}</div></#if>
+    <#if loginError??><div class="alert alert-error" role="alert">${loginError}</div></#if>
     <form method="post" action="/login" class="stack" data-loading>
       <@ui.csrfField/>
       <#if continueUrl??><input type="hidden" name="continue" value="${continueUrl}"></#if>

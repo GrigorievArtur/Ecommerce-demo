@@ -2,14 +2,18 @@
 <@ui.page title="Shop" description="Browse the full catalogue of sets, minifigures and accessories. Filter by category and sort by price or name.">
   <div class="catalog-head">
     <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a> / Shop</nav>
-    <h1>
-      <#if q?? && q?has_content>Results for “${q}”
-      <#elseif selectedCategory??>${selectedCategory.label}
-      <#else>All products
-      </#if>
-    </h1>
-    <form class="filters" method="get" action="/products" data-auto-submit>
-      <input type="search" name="q" value="${(q)!''}" placeholder="Search…" aria-label="Search products">
+    <div>
+      <span class="eyebrow">Catalogue</span>
+      <h1>
+        <#if q?? && q?has_content>Results for “${q}”
+        <#elseif selectedCategory??>${selectedCategory.label}
+        <#else>All products
+        </#if>
+      </h1>
+      <p class="lede">Search the range, filter by shelf and sort by what matters. Every set ships from our own warehouse.</p>
+    </div>
+    <form class="filters" method="get" action="/products" data-auto-submit role="search">
+      <input type="search" name="q" value="${(q)!''}" placeholder="Search sets, minifigures, accessories…" aria-label="Search products">
       <select name="category" aria-label="Filter by category">
         <option value="">All categories</option>
         <#list categories as c>
@@ -24,15 +28,15 @@
       </select>
       <button class="btn btn-primary" type="submit">Apply</button>
       <#if (q?? && q?has_content) || selectedCategory??>
-        <a class="btn btn-ghost" href="/products">Clear filters</a>
+        <a class="btn btn-ghost" href="/products">Clear</a>
       </#if>
     </form>
   </div>
 
   <#if products.content?size == 0>
-    <p class="empty">No products matched your search. <a href="/products">Clear filters</a></p>
+    <@ui.emptyState icon="search" title="No products matched your search" text="Try a broader term, choose another category, or clear the filters to see the whole catalogue." actionHref="/products" actionLabel="Clear filters"/>
   <#else>
-    <p class="muted">Showing ${products.numberOfElements} of ${products.totalElements} product<#if products.totalElements != 1>s</#if></p>
+    <p class="result-count">Showing ${products.numberOfElements} of ${products.totalElements} product<#if products.totalElements != 1>s</#if></p>
     <div class="grid">
       <#list products.content as p><@ui.productCard p/></#list>
     </div>

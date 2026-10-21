@@ -1,7 +1,7 @@
 <#import "partials/layout.ftl" as ui>
 <@ui.page title="Order confirmed" description="Thank you — your order has been placed.">
   <div class="panel center">
-    <p class="cat">Order #${order.id}</p>
+    <span class="eyebrow">Order #${order.id}</span>
     <h1>Thank you! Your order is confirmed.</h1>
     <p class="muted">Transaction ${transactionId!''}. Keep this reference handy — you can review the order any time from your account.</p>
     <div class="actions actions-center">
@@ -35,7 +35,7 @@
           ${order.shippingPreset.city!''}, ${order.shippingPreset.state!''} ${order.shippingPreset.postalCode!''}<br>
           ${order.shippingPreset.country!''}
         </address>
-        <p class="note">Estimated delivery: 3–5 business days.</p>
+        <p class="note">Estimated delivery: 3–5 business days. We’ll email tracking details as soon as it ships.</p>
       <#else>
         <p class="muted">No delivery address was saved with this order.</p>
       </#if>

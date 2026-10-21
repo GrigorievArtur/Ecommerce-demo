@@ -1,11 +1,15 @@
 <#import "../partials/layout.ftl" as ui>
 <@ui.page title="Admin dashboard" description="Store sales analytics and inventory alerts.">
   <div class="page-head">
-    <h1>Dashboard</h1>
+    <div>
+      <span class="eyebrow">Admin</span>
+      <h1>Dashboard</h1>
+      <p>A quick read on sales and stock.</p>
+    </div>
     <div class="actions">
       <a class="btn btn-ghost" href="/">View storefront</a>
       <a class="btn btn-ghost" href="/admin/products">Manage products</a>
-      <a class="btn btn-primary" href="/admin/products/new">+ Add product</a>
+      <a class="btn btn-primary" href="/admin/products/new">Add product</a>
     </div>
   </div>
 
@@ -16,26 +20,31 @@
     <div class="stat"><div class="value"><@ui.money summary.averageOrderValue/></div><div class="label">Avg. order value</div></div>
   </div>
 
-  <div class="panel">
-    <h2 class="panel-title">Low stock (5 or fewer)</h2>
+  <section class="panel">
+    <div class="page-head">
+      <div>
+        <h2 class="panel-title">Low stock</h2>
+        <p class="muted">Products with five or fewer units remaining.</p>
+      </div>
+    </div>
     <#if summary.lowStock?size == 0>
       <p class="muted">Everything is well stocked.</p>
     <#else>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Product</th><th>Category</th><th>Stock</th><th></th></tr></thead>
+          <thead><tr><th>Product</th><th>Category</th><th class="numeric">Stock</th><th></th></tr></thead>
           <tbody>
           <#list summary.lowStock as p>
             <tr>
-              <td>${(p.name)!''}</td>
+              <td><strong>${(p.name)!''}</strong></td>
               <td>${(p.categoryLabel)!''}</td>
-              <td><strong>${p.stock!0}</strong></td>
-              <td><a href="/admin/products/${p.id}/edit">Restock</a></td>
+              <td class="numeric"><span class="chip chip-sale">${p.stock!0} left</span></td>
+              <td><div class="table-actions"><a class="btn btn-ghost btn-sm" href="/admin/products/${p.id}/edit">Restock</a></div></td>
             </tr>
           </#list>
           </tbody>
         </table>
       </div>
     </#if>
-  </div>
+  </section>
 </@ui.page>
