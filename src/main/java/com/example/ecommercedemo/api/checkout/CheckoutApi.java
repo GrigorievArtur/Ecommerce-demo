@@ -1,6 +1,7 @@
 package com.example.ecommercedemo.api.checkout;
 
 import com.example.ecommercedemo.dtos.orders.OrderDTO;
+import com.example.ecommercedemo.dtos.orders.OrderSnapshotDTO;
 import com.example.ecommercedemo.dtos.shipments.CreateShippingPresetDTO;
 import com.example.ecommercedemo.entities.users.User;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,14 +19,13 @@ public interface CheckoutApi {
 
     @PostMapping("/default")
     @Operation(summary = "Checkouts the current user/guest cart with the default shipping address")
-    ResponseEntity<OrderDTO> checkoutDefaultShippingPreset(
+    ResponseEntity<OrderSnapshotDTO> checkoutDefaultShippingPreset(
             @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user
     );
-
     @PostMapping("/saved/{shippingPresetId}")
     @Operation(summary = "Checkouts the current user/guest cart with a saved shipping address preset")
-    ResponseEntity<OrderDTO> checkoutSavedShippingPreset(
+    ResponseEntity<OrderSnapshotDTO> checkoutSavedShippingPreset(
             @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user,
             @PathVariable Long shippingPresetId
@@ -33,7 +33,7 @@ public interface CheckoutApi {
 
     @PostMapping("/new")
     @Operation(summary = "Checkouts the current user/guest cart with a new shipping address")
-    ResponseEntity<OrderDTO> checkoutNewShippingPreset(
+    ResponseEntity<OrderSnapshotDTO> checkoutNewShippingPreset(
             @CookieValue(name = "suid", required = true) UUID suid,
             @AuthenticationPrincipal User user,
             @Valid @RequestBody CreateShippingPresetDTO shippingPresetDTO

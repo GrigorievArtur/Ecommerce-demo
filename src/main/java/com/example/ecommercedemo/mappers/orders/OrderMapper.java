@@ -1,5 +1,6 @@
 package com.example.ecommercedemo.mappers.orders;
 
+import com.example.ecommercedemo.dtos.orders.OrderSnapshotDTO;
 import com.example.ecommercedemo.entities.carts.Cart;
 import com.example.ecommercedemo.entities.orders.OrderSnapshot;
 import org.mapstruct.Mapper;
@@ -10,4 +11,6 @@ public interface OrderMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "items", ignore = true)
     OrderSnapshot toOrderSnapshot(Cart cart);
+
+    OrderSnapshotDTO toOrderSnapshotDTO(OrderSnapshot orderSnapshot);
 }

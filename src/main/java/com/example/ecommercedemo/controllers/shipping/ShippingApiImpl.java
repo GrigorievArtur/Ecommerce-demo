@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,12 +22,12 @@ public class ShippingApiImpl implements ShippingAPI {
     private ShippingPresetService shippingPresetService;
 
     @Override
-    public ResponseEntity<ShippingPresetDTO> saveShippingPreset(User user, CreateShippingPresetDTO createShippingPresetDTO) {
+    public ResponseEntity<ShippingPresetDTO> saveShippingPreset(User user, @Valid CreateShippingPresetDTO createShippingPresetDTO) {
         return ResponseEntity.ok(shippingPresetService.saveShippingPreset(createShippingPresetDTO, user));
     }
 
     @Override
-    public ResponseEntity<ShippingPresetDTO> updateShippingPreset(Long id, User user, UpdateShippingPresetDTO updateShippingPresetDTO) {
+    public ResponseEntity<ShippingPresetDTO> updateShippingPreset(Long id, User user, @Valid UpdateShippingPresetDTO updateShippingPresetDTO) {
         return ResponseEntity.ok(shippingPresetService.updateShippingPreset(id, updateShippingPresetDTO, user));
     }
 

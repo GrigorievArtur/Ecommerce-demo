@@ -27,19 +27,32 @@ public class ShippingPresetService {
     // ----------------------------------------------------------
 
     public ShippingPresetDTO saveShippingPreset(CreateShippingPresetDTO createShippingPresetDTO, User user) {
-        return shippingMapper.toDTO(saveShippingPresetEntity(createShippingPresetDTO, user));
+        ShippingPreset entity = saveShippingPresetEntity(createShippingPresetDTO, user);
+        ShippingPresetDTO dto = shippingMapper.toDTO(entity);
+        dto.setDefault(entity.isDefault());
+        return dto;
     }
 
     public Page<ShippingPresetDTO> getShippingPresetPaged(Pageable pageable, User user) {
-        return getShippingPresetPagedEntities(pageable, user).map(shippingMapper::toDTO);
+        return getShippingPresetPagedEntities(pageable, user).map(entity -> {
+            ShippingPresetDTO dto = shippingMapper.toDTO(entity);
+            dto.setDefault(entity.isDefault());
+            return dto;
+        });
     }
 
     public ShippingPresetDTO getShippingPreset(Long id, User user) {
-        return shippingMapper.toDTO(getShippingPresetEntity(id, user));
+        ShippingPreset entity = getShippingPresetEntity(id, user);
+        ShippingPresetDTO dto = shippingMapper.toDTO(entity);
+        dto.setDefault(entity.isDefault());
+        return dto;
     }
 
     public ShippingPresetDTO updateShippingPreset(Long id, UpdateShippingPresetDTO dto, User user) {
-        return shippingMapper.toDTO(updateShippingPresetEntity(id, dto, user));
+        ShippingPreset entity = updateShippingPresetEntity(id, dto, user);
+        ShippingPresetDTO result = shippingMapper.toDTO(entity);
+        result.setDefault(entity.isDefault());
+        return result;
     }
 
     // ----------------------------------------------------------
@@ -53,6 +66,7 @@ public class ShippingPresetService {
 
     public ShippingPreset saveShippingPresetEntity(CreateShippingPresetDTO createShippingPresetDTO, User user) {
         ShippingPreset preset = shippingMapper.toEntity(createShippingPresetDTO);
+        preset.setDefault(createShippingPresetDTO.getIsDefault());
         preset.setUser(user);
         if (preset.isDefault()) {
             clearOtherDefaults(user, null);
@@ -77,6 +91,9 @@ public class ShippingPresetService {
     public ShippingPreset updateShippingPresetEntity(Long id, UpdateShippingPresetDTO dto, User user) {
         ShippingPreset preset = getShippingPresetEntity(id, user);
         shippingMapper.updatePresetFromDto(dto, preset);
+        if (dto.getIsDefault() != null) {
+            preset.setDefault(dto.getIsDefault());
+        }
         if (preset.isDefault()) {
             clearOtherDefaults(user, preset.getId());
         }
